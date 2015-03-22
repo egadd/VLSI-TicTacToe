@@ -67,7 +67,7 @@ public class TicTacToeBoard {
         // check vertical wins
         for (int row = 0; row < 3; row++) {
             boolean allXorO = true;
-            for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 3; col++) {
                 if (!(xo == 'X' ? myBoard[row][col].isX() : myBoard[row][col].isO())) {
                     allXorO = false;
                 }
