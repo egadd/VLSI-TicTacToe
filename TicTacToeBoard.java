@@ -100,7 +100,10 @@ public class TicTacToeBoard {
         String out = "";
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
-                out += "0"; // error bit - assume we never give it a bad input
+                // error bit - assume we never give it a bad input
+                out += "0";
+                
+                // add the contents of the current cell
                 if (myBoard[row][col].isEmpty()) {
                     out += "00";
                 } else if (myBoard[row][col].isX()) {
@@ -108,7 +111,11 @@ public class TicTacToeBoard {
                 } else {
                     out += "01";
                 }
+                
+                // add the row and column representation
                 out += intToBinaryString(row) + intToBinaryString(col);
+
+                // add the win condition
                 if (isXWin()) {
                     out += "10";
                 } else if (isOWin()) {
