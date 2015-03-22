@@ -2,19 +2,24 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
 
+import java.util.Arrays;
+
 public class TicTacToeRunner {
     public static void main(String[] args) throws IOException {
         TicTacToeBoard theBoard = new TicTacToeBoard();
 
         BufferedReader br = 
             new BufferedReader(new InputStreamReader(System.in));
+        char[] input;
+        int xTurn = 1;
 
-        int xTurn = 0;
-
-        while (true) {
-            char[] playerIn = br.readLine().toCharArray();
-            char[] rowIn = br.readLine().toCharArray();
-            char[] colIn = br.readLine().toCharArray();
+        while ((input = br.readLine().toCharArray()) != null) {
+            assert(input.length == 8);
+            char reset = input[0];
+            char[] playerIn = Arrays.copyOfRange(input, 1, 3);
+            char[] rowIn = Arrays.copyOfRange(input, 3, 5);
+            char[] colIn = Arrays.copyOfRange(input, 5, 7);
+            char ai = input[7];
 
             int player = parseAsInt(playerIn);
             int row = parseAsInt(rowIn);
@@ -34,14 +39,13 @@ public class TicTacToeRunner {
 
     private static int parseAsInt(char[] in) {
         assert(in.length == 2);
-        System.out.println(in);
-        assert((in[0] != '1') || (in[1] != '1'));
+        assert((in[0] != '1') || (in[1] != '1')); // 11
         
-        if (in[0] == '1') {
-            return 1;
-        } else if (in[1] == '1') {
+        if (in[0] == '1') { // 10
             return 2;
-        } else {
+        } else if (in[1] == '1') { // 01
+            return 1;
+        } else { // 00
             return 0;
         }
     }
