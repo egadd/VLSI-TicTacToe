@@ -18,14 +18,14 @@ public class TicTacToeCell {
     }
 
     public void setO() {
-        assert(x = false);
-        assert(o = false);
+        assert(x == false);
+        assert(o == false);
         o = true;
     }
 
     public void setX() {
-        assert(x = false);
-        assert(o = false);
+        assert(x == false);
+        assert(o == false);
         x = true;
     }
 

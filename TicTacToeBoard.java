@@ -95,4 +95,41 @@ public class TicTacToeBoard {
         // no win conditions
         return false;
     }
+
+    public String toString() {
+        String out = "";
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 3; col++) {
+                out += "0"; // error bit - assume we never give it a bad input
+                if (myBoard[row][col].isEmpty()) {
+                    out += "00";
+                } else if (myBoard[row][col].isX()) {
+                    out += "10";
+                } else {
+                    out += "01";
+                }
+                out += intToBinaryString(row) + intToBinaryString(col);
+                if (isXWin()) {
+                    out += "10";
+                } else if (isOWin()) {
+                    out += "01";
+                } else {
+                    out += "00";
+                }
+            }
+        }
+        return out;
+    }
+
+    private String intToBinaryString(int x) {
+        assert (0 <= x && x < 3);
+        if (x == 0) {
+            return "00";
+        } else if (x == 1) {
+            return "01";
+        } else {
+            return "10";
+        }
+    }
+
 }
