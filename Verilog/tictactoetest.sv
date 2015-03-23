@@ -1,7 +1,7 @@
 `timescale 1ns / 100ps 
 `include "tictactoe.sv"
 module tictactoetest();
-  logic clk;
+  logic ph1, ph2;
   logic reset, ai_en, errEx;
   logic err;
   logic [1:0] xoroin, rowin, colin, xoroEx, rowEx, colEx, winEx;
@@ -16,7 +16,10 @@ module tictactoetest();
 
   // generate clock
   always begin
-    clk = 1; #5; clk = 0; #5;
+    ph1 = 0; ph2 = 0; #1;
+    ph1 = 1; #4;
+    ph1 = 0; #1;
+    ph2 = 1; #4;
   end
 
   // load vectors at start
@@ -29,7 +32,7 @@ module tictactoetest();
   end
 
   // apply test vectors on rising edge of clk
-  always @(posedge clk) begin
+  always @(posedge ph2) begin
     #1; 
     {reset, xoroin, rowin, colin, ai_en, errEx, xoroEx, rowEx, colEx, winEx} = 
                                                      testvectors[vectornum];
@@ -67,7 +70,7 @@ module tictactoetest();
             rowin, colin, xoroin, err, errEx);
   errors = errors + 1;
       end
-      
+
     vectornum = vectornum + 1;
     if (testvectors[vectornum] === 17'bx) begin
       $display("%d tests completed with %d errors", 
