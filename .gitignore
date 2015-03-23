@@ -1,6 +1,9 @@
 # Hidden files
 .*
 
+# Temporary out files
+*.out
+
 *.class
 
 # Mobile Tools for Java (J2ME)

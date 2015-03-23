@@ -10,29 +10,29 @@ public class Runner {
         TicTacToeBoard myBoard = new TicTacToeBoard();
 
         BufferedReader br = 
-            //new BufferedReader(new InputStreamReader(System.in));
+            // Read from input
+            // new BufferedReader(new InputStreamReader(System.in));
+            // Read from inputVecs.txt
             new BufferedReader(new FileReader("inputVecs.txt"));
         BufferedReader outReader =
             new BufferedReader(new FileReader("outputVecs.txt"));
-        PrintWriter writer = new PrintWriter("javaOutputVecs.txt", "UTF-8");
-        String inputString;
-        String expectedOutput;
-        int xTurn = 1;
+        PrintWriter writer = new PrintWriter("javaOutputVecs.out", "UTF-8");
+
+        String inputVector;
+        boolean xTurn = true;
         int outputIteration = 0;
-        char error = '0';
+        int error = 0;
 
-        while ((inputString = br.readLine()) != null) {
-            expectedOutput = outReader.readLine();
-
-            System.out.print(inputString + " - ");
-
-            char[] input = inputString.toCharArray();
+        while ((inputVector = br.readLine()) != null) {
+            char[] input = inputVector.toCharArray();
             assert(input.length == 8);
-            char reset = input[0];
+
+            // Parse input signals from vector
+            boolean reset = (input[0] != '0');
             int player = parseAsInt(Arrays.copyOfRange(input, 1, 3));
             int row = parseAsInt(Arrays.copyOfRange(input, 3, 5));
             int col = parseAsInt(Arrays.copyOfRange(input, 5, 7));
-            char ai = input[7];
+            boolean ai_en = (input[7] != '0');
 
             // Compute win before putting the move through (1 cycle delay)
             String win = "00";
@@ -44,57 +44,64 @@ public class Runner {
 
             // ERROR if invalid input
             if (player == -1 || row == -1 || col == -1) {
-                error = '1';
+                error = 1;
             } else {
                 // RESET
-                if (reset == '1') {
+                if (reset) {
                     myBoard = new TicTacToeBoard();
-                    xTurn = 1;
+                    xTurn = true;
                     outputIteration = 0;
                     win = "00";
                 } else {
-                    if (player == 0) {
+                    if (ai_en && xTurn) {
+                        // AI makes a move
+                        myBoard.makeAIMove();
+                        xTurn = false;
+                    } else if (player == 0) {
                         // make no move
                     } else if (win != "00") {
                         // game won, no moves allowed
-                        error = '1';
-                    } else if (player == 1 && xTurn == 0) { // O's turn
+                        error = 1;
+                    } else if (player == 1 && !xTurn) { // O's turn
                         if (!myBoard.makeOMove(row, col)) {
                             // move fails
-                            error = '1';
+                            error = 1;
                         } else {
                             // move succeeds, pass off turn
-                            xTurn = 1;
+                            xTurn = true;
                         }
-                    } else if (player == 2 && xTurn == 1) { // X's turn
+                    } else if (player == 2 && xTurn) { // X's turn
                         if (!myBoard.makeXMove(row, col)) {
                             // move fails
-                            error = '1';
+                            error = 1;
                         } else {
                             // move succeeds, pass off turn
-                            xTurn = 0;
+                            xTurn = false;
                         }
                     } else {
                         // Move out of turn
-                        error = '1';
+                        error = 1;
                     }
                 }
             }
 
-            //myBoard.prettyPrint();
+            // myBoard.prettyPrint();
 
             String outputVector = error + myBoard.getOutputVector(outputIteration) + win;
-
-            System.out.println(outputVector + " - " + expectedOutput);
+            String expectedOutput = outReader.readLine();
+            System.out.println(inputVector + " - " +
+                               outputVector + " - " +
+                               expectedOutput);
             writer.println(outputVector);
 
+            // Did we match the prediction?
             if (!expectedOutput.equals(outputVector)) {
                 System.out.println("FAIL");
                 myBoard.prettyPrint();
             }
 
             outputIteration = (outputIteration + 1) % 9;
-            error = '0';
+            error = 0;
         }
 
         writer.close();
@@ -103,15 +110,14 @@ public class Runner {
     private static int parseAsInt(char[] in) {
         assert(in.length == 2);
         
-        if (in[0] == '1' && in[1] == '1') { // 11
-            return -1;
+        if (in[0] == '0' && in[1] == '0') { // 00
+            return 0;
         } else if (in[0] == '1') { // 10
             return 2;
         } else if (in[1] == '1') { // 01
             return 1;
-        } else { // 00
-            return 0;
+        } else { // XX
+            return -1;
         }
     }
-
 }
