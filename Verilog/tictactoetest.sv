@@ -11,7 +11,7 @@ module tictactoetest();
   logic [16:0] testvectors[1000:0];
 
   // instantiate Device Under Test (DUT)
-  tictactoe dut(.clk, .reset, .xoroin, .rowin, .colin, .ai_en,
+  tictactoe dut(.ph1, .ph2, .reset, .xoroin, .rowin, .colin, .ai_en,
                 .err, .xoroout, .rowout, .colout, .win);
 
   // generate clock
@@ -25,14 +25,14 @@ module tictactoetest();
   // load vectors at start
   initial begin
     $dumpfile("tictactoe.vcd"); // where to dump the results
-    $dumpvars(1, clk, reset, rowin, colin, xoroin, rowout, colout, xoroout);
+    $dumpvars(1, ph1, ph2, reset, rowin, colin, xoroin, rowout, colout, xoroout);
     $readmemb("tictactoe.tv", testvectors); // load test vectors
     vectornum = 0; errors = 0;
     // reset = 1; #17; reset = 0; // come out of reset before cycle 2
   end
 
   // apply test vectors on rising edge of clk
-  always @(posedge ph2) begin
+  always @(posedge ph1) begin
     #1; 
     {reset, xoroin, rowin, colin, ai_en, errEx, xoroEx, rowEx, colEx, winEx} = 
                                                      testvectors[vectornum];
@@ -40,7 +40,7 @@ module tictactoetest();
   end
 
   // check results on falling edge of clk
-  always @(negedge clk)
+  always @(negedge ph2)
     begin // skip during reset
       if (xoroout !== xoroEx) begin
         $display("Error: row = %h, col = %h, xoro = %h (expected %h)",

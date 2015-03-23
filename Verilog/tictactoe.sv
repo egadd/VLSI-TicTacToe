@@ -53,9 +53,12 @@ module inputController(input logic ph1, ph2,
 
     // internal signals
     logic gameover_err, parse_err, turn_err, full_err, write;
+    logic resetval;
+
+    assign resetval = ai_en ? AI : X;
 
     // turn tracking FSM state register
-    flopenrval #2 statereg(ph1, ph2, reset, 1'b1, ai_en ? AI : X, next_state, state);
+    flopenrval #2 statereg(ph1, ph2, reset, 1'b1, resetval, next_state, state);
     // always_ff @(posedge clk, posedge reset)
     //     if (reset) state <= ai_en ? AI : X;
     //     else       state <= nextstate;
@@ -63,12 +66,16 @@ module inputController(input logic ph1, ph2,
     // error checking logic
     always_comb
         begin
-            assign write = xoro[1] | xoro[0];
+            // some errors only happen if we are trying to write
+            assign write = xoro[1] | xoro[0]; 
+
+            // Check inputs for validity, correct turn, and not a completed game
             assign gameover_err = (win[1] | win[0]) & write;
             assign parse_err = (row[1] & row[0]) | (col[1] & col[0]) | 
                                 (xoro[1] & xoro[0]);
             assign turn_err = ((state == X) & xoro[0]) | ((state == O) & xoro[1]) | 
                                 ((state == AI) & write);
+            
             // error goes high when any of these errors are present
             assign error = gameover_err | parse_err | turn_err;
             assign full_err = error | write_error;
@@ -339,7 +346,7 @@ module latch #(parameter WIDTH = 8)
         output reg [WIDTH-1:0] q);
 
     always@(*) 
-        f (ph) q <= d;
+        if (ph) q <= d;
 endmodule
 
 module mux2 #(parameter WIDTH = 8)
