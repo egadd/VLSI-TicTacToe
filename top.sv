@@ -174,6 +174,7 @@ module board (
     logic [17:0] regset; 
     logic addr00, addr01, addr02, addr10, addr11, addr12, addr20, addr21, addr22;
 
+    // calculate address enable bits for each pair of registers
     assign addr00 = (row == 2'b00) & (col == 2'b00);
     assign addr01 = (row == 2'b00) & (col == 2'b01);
     assign addr02 = (row == 2'b00) & (col == 2'b10);
@@ -184,6 +185,7 @@ module board (
     assign addr21 = (row == 2'b10) & (col == 2'b01);
     assign addr22 = (row == 2'b10) & (col == 2'b10);
 
+    // if a register is being written to but it already holds X or O, bad news bears
     assign write_error = 
             (addr00 & (registers[1] | registers[0])) | 
             (addr01 & (registers[3] | registers[2])) | 
@@ -195,6 +197,8 @@ module board (
             (addr21 & (registers[15] | registers[14])) | 
             (addr22 & (registers[17] | registers[16]));
 
+    // only assign to a register if no errors and it is the addressed pair and it is
+    // the appropriate register for x or o
     assign regset[1:0] = addr00 & ~error & ~write_error & xoro;
     assign regset[3:2] = addr01 & ~error & ~write_error & xoro;
     assign regset[5:4] = addr02 & ~error & ~write_error & xoro;
@@ -211,11 +215,39 @@ module board (
         else registers <= registers | regset;
 endmodule
 
+// sets win output to x or o based if one has won
+// assumes only one player will win, otherwise could output either
 module winChecker(
     input logic [1:0] clk, 
     input logic [17:0] registers, 
     output logic [1:0] winstate
 );
 
+    logic [1:0] vertical, horizontal, diagonal;
+    
+    // vertical wins
+    assign vertical = ((((registers[1:0] == registers[7:6]) & 
+                         (registers[7:6] == registers[13:12])) & registers[1:0]) |
+                       (((registers[3:2] == registers[9:8]) & 
+                         (registers[9:8] == registers[15:14])) & registers[3:2]) |
+                       (((registers[5:4] == registers[11:10]) & 
+                         (registers[11:10] == registers[17:16])) & registers[5:4]));
 
+    // horizontal wins
+    assign horizontal = 
+                      ((((registers[1:0] == registers[3:2]) & 
+                         (registers[3:2] == registers[5:4])) & registers[1:0]) |
+                       (((registers[7:6] == registers[9:8]) & 
+                         (registers[9:8] == registers[11:10])) & registers[7:6]) |
+                       (((registers[13:12] == registers[15:14]) & 
+                         (registers[15:14] == registers[17:16])) & registers[13:12]));
+
+    // diagonal wins
+    assign diagonal = ((((registers[1:0] == registers[9:8]) & 
+                         (registers[9:8] == registers[17:16])) & registers[1:0]) |
+                       (((registers[5:4] == registers[9:8]) & 
+                         (registers[9:8] == registers[13:12])) & registers[5:4]));
+
+    // or them together to get win condition
+    assign winstate = vertical | horizontal | diagonal;
 endmodule
