@@ -14,12 +14,12 @@
                   output logic err,
                   output logic [1:0] xoroout, rowout, colout, win);
 
-    logic write_error;
+    logic write_error, input_error;
     logic [17:0] registers;
 
     // input controller
     inputController incon (clk, reset, xoroin, rowin, colin, win, ai_en,
-                            write_error, err);
+                            write_error, input_error);
 
     // board state registers
     board b (clk, reset, error, xoroin, rowin, colin, registers, write_error);
@@ -32,6 +32,8 @@
 
     // AI logic
 
+    assign err = write_error | input_error;
+    
 endmodule
 
 // The input controller checks for input signal errors and tracks turns
@@ -50,7 +52,7 @@ module inputController(input logic [1:0] clk,
     // wire [1:0] state, nextstate;
 
     // internal signals
-    logic gameover_err, parse_err, turn_err;
+    logic gameover_err, parse_err, turn_err, full_err;
 
     // turn tracking FSM state register
     always_ff @(posedge clk)
@@ -66,14 +68,15 @@ module inputController(input logic [1:0] clk,
             assign turn_err = ((state == X) & xoro[1]) | ((state == O) & xoro[0]) | 
                                 ((state == AI) & (xoro[1] | xoro[0]));
             // error goes high when any of these errors are present
-            assign error = gameover_err | parse_err | turn_err | write_error;
+            assign error = gameover_err | parse_err | turn_err;
+            assign full_err = error | write_error;
         end
 
     // next state logic
     always_comb
         case (state)
-            X:          nextstate <= error ? state : O;
-            O:          nextstate <= error ? state : ai_en ? AI : X;
+            X:          nextstate <= full_err ? state : O;
+            O:          nextstate <= full_err ? state : ai_en ? AI : X;
             AI:         nextstate <= O;
             default:    nextstate <= X;
         endcase
