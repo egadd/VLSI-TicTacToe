@@ -49,7 +49,7 @@ module inputController(input logic [1:0] clk,
 
     // turn tracking FSM state register
     always_ff @(posedge clk)
-        if (reset) state <= X;
+        if (reset) state <= ai_en ? AI : X;
         else       state <= nextstate;
 
     // error checking logic
@@ -67,9 +67,9 @@ module inputController(input logic [1:0] clk,
     // next state logic
     always_comb
         case (state)
-            X:          nextstate <= error ? state : ai_en ? AI : O;
-            O:          nextstate <= error ? state : X;
-            AI:         nextstate <= X;
+            X:          nextstate <= error ? state : O;
+            O:          nextstate <= error ? state : ai_en ? AI : X;
+            AI:         nextstate <= O;
             default:    nextstate <= X;
         endcase
 
