@@ -9,24 +9,26 @@
 // top level module containing the entire logic of the chip
  module tictactoe(input logic [1:0] clk,
                   input logic reset,
-                  input logic [1:0] xoro, rowin, colin,
+                  input logic [1:0] xoroin, rowin, colin,
                   input logic ai_en,
                   output logic err,
-                  output logic [1:0] xoro, rowout, colout, win);
+                  output logic [1:0] xoroout, rowout, colout, win);
 
     logic write_error;
     logic [17:0] registers;
 
     // input controller
-
-    // address decoder
+    inputController incon (clk, reset, xoroin, rowin, colin, win, ai_en,
+                            write_error, err);
 
     // board state registers
+    board b (clk, reset, error, xoroin, rowin, colin, registers, write_error);
 
     // output controller
-        /// decide whether it should stay at the first state after a reset or immediately change
+    outputController outcon (clk, reset, registers, xoroout, rowout, colout);
 
     // win checker
+
 
     // AI logic
 
@@ -158,5 +160,62 @@ module outputController (
                     assign col = 2'b00;
                     assign xoro = registers{1:0};
         endcase
+endmodule
+
+// registers with set & error logic
+module board (
+    input logic [1:0] clk,
+    input logic reset, error, 
+    input logic [1:0] xoro, row, col, 
+    output logic [17:0] registers, 
+    output logic write_error
+);
+
+    logic [17:0] regset; 
+    logic addr00, addr01, addr02, addr10, addr11, addr12, addr20, addr21, addr22;
+
+    assign addr00 = (row == 2'b00) & (col == 2'b00);
+    assign addr01 = (row == 2'b00) & (col == 2'b01);
+    assign addr02 = (row == 2'b00) & (col == 2'b10);
+    assign addr10 = (row == 2'b01) & (col == 2'b00);
+    assign addr11 = (row == 2'b01) & (col == 2'b01);
+    assign addr12 = (row == 2'b01) & (col == 2'b10);
+    assign addr20 = (row == 2'b10) & (col == 2'b00);
+    assign addr21 = (row == 2'b10) & (col == 2'b01);
+    assign addr22 = (row == 2'b10) & (col == 2'b10);
+
+    assign write_error = 
+            (addr00 & (registers[1] | registers[0])) | 
+            (addr01 & (registers[3] | registers[2])) | 
+            (addr02 & (registers[5] | registers[4])) | 
+            (addr10 & (registers[7] | registers[6])) | 
+            (addr11 & (registers[9] | registers[8])) | 
+            (addr12 & (registers[11] | registers[10])) | 
+            (addr20 & (registers[13] | registers[12])) | 
+            (addr21 & (registers[15] | registers[14])) | 
+            (addr22 & (registers[17] | registers[16]));
+
+    assign regset[1:0] = addr00 & ~error & ~write_error & xoro;
+    assign regset[3:2] = addr01 & ~error & ~write_error & xoro;
+    assign regset[5:4] = addr02 & ~error & ~write_error & xoro;
+    assign regset[7:6] = addr10 & ~error & ~write_error & xoro;
+    assign regset[9:8] = addr11 & ~error & ~write_error & xoro;
+    assign regset[11:10] = addr12 & ~error & ~write_error & xoro;
+    assign regset[13:12] = addr20 & ~error & ~write_error & xoro;
+    assign regset[15:14] = addr21 & ~error & ~write_error & xoro;
+    assign regset[17:16] = addr22 & ~error & ~write_error & xoro;
+     
+    // synchronous reset of registers, or with regset signal for board control
+    always_ff @(posedge clk)
+        if (reset) registers <= 17'b0;
+        else registers <= registers | regset;
+endmodule
+
+module winChecker(
+    input logic [1:0] clk, 
+    input logic [17:0] registers, 
+    output logic [1:0] winstate
+);
+
 
 endmodule
