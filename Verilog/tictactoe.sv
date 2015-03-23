@@ -7,15 +7,15 @@
  */
 
 // top level module containing the entire logic of the chip
- module tictactoe(input [1:0] clk,
-                  input reset,
-                  input [1:0] xoroin, rowin, colin,
-                  input ai_en,
-                  output err,
-                  output [1:0] xoroout, rowout, colout, win);
+ module tictactoe(input logic [1:0] clk,
+                  input logic reset,
+                  input logic [1:0] xoroin, rowin, colin,
+                  input logic ai_en,
+                  output logic err,
+                  output logic [1:0] xoroout, rowout, colout, win);
 
-    wire write_error;
-    wire [17:0] registers;
+    logic write_error;
+    logic [17:0] registers;
 
     // input controller
     inputController incon (clk, reset, xoroin, rowin, colin, win, ai_en,
@@ -35,42 +35,42 @@
 endmodule
 
 // The input controller checks for input signal errors and tracks turns
-module inputController(input [1:0] clk,
-                        input reset,
-                        input [1:0] xoro, row, col, win,
-                        input ai_en, write_error,
-                        output error);
+module inputController(input logic [1:0] clk,
+                        input logic reset,
+                        input logic [1:0] xoro, row, col, win
+                        input logic ai_en, write_error
+                        output logic error);
     // define states for X, O, and AI turns
-    // typedef enum wire [1:0] {X, O, AI} statetype;
-    // statetype [1:0] state, nextstate;
+    typedef enum logic [1:0] {X, O, AI} statetype;
+    statetype [1:0] state, nextstate;
     // List states
-    parameter X = 2'b00;
-    parameter O = 2'b01;
-    parameter AI = 2'b10;
-    wire [1:0] state, nextstate;
+    // parameter X = 2'b00;
+    // parameter O = 2'b01;
+    // parameter AI = 2'b10;
+    // wire [1:0] state, nextstate;
 
     // internal signals
-    wire gameover_err, parse_err, turn_err;
+    logic gameover_err, parse_err, turn_err;
 
     // turn tracking FSM state register
-    always @(posedge clk)
+    always_ff @(posedge clk)
         if (reset) state <= ai_en ? AI : X;
         else       state <= nextstate;
 
     // error checking logic
-    always @(*)
+    always_comb
         begin
-            gameover_err = (win[1] | win[0]) & (xoro[1] | xoro[0]);
-            parse_err = (row[1] & row[0]) | (col[1] & col[0]) | 
+            assign gameover_err = (win[1] | win[0]) & (xoro[1] | xoro[0]);
+            assign parse_err = (row[1] & row[0]) | (col[1] & col[0]) | 
                                 (xoro[1] & xoro[0]);
-            turn_err = ((state == X) & xoro[1]) | ((state == O) & xoro[0]) | 
+            assign turn_err = ((state == X) & xoro[1]) | ((state == O) & xoro[0]) | 
                                 ((state == AI) & (xoro[1] | xoro[0]));
             // error goes high when any of these errors are present
-            error = gameover_err | parse_err | turn_err | write_error;
+            assign error = gameover_err | parse_err | turn_err | write_error;
         end
 
     // next state logic
-    always @(*)
+    always_comb
         case (state)
             X:          nextstate <= error ? state : O;
             O:          nextstate <= error ? state : ai_en ? AI : X;
@@ -83,34 +83,33 @@ endmodule
 // The output controller contantly cycles through the cells and sends them to
 // the output pins
 module outputController (
-    input [1:0] clk,    // two-phase clock
-    input reset,  
-    input [17:0] registers,
-    output [1:0] xoro, row, col
+    input logic [1:0] clk,    // two-phase clock
+    input logic reset,  
+    input logic [17:0] registers,
+    output logic [1:0] xoro, row, col
 );
-    
-    wire xo, r, c;
-    // typedef enum logic [3:0] {S0,S1,S2,S3,S4,S5,S6,S7,S8} statetype;
-    // statetype [3:0] state, nextstate;
+
+    typedef enum logic [3:0] {S0,S1,S2,S3,S4,S5,S6,S7,S8} statetype;
+    statetype [3:0] state, nextstate;
     // List states
-    parameter S0 = 4'b0000;
-    parameter S1 = 4'b0001;
-    parameter S2 = 4'b0010;
-    parameter S3 = 4'b0011;
-    parameter S4 = 4'b0100;
-    parameter S5 = 4'b0101;
-    parameter S6 = 4'b0110;
-    parameter S7 = 4'b0111;
-    parameter S8 = 4'b1000;
-    wire [3:0] state, nextstate;
+    // parameter S0 = 4'b0000;
+    // parameter S1 = 4'b0001;
+    // parameter S2 = 4'b0010;
+    // parameter S3 = 4'b0011;
+    // parameter S4 = 4'b0100;
+    // parameter S5 = 4'b0101;
+    // parameter S6 = 4'b0110;
+    // parameter S7 = 4'b0111;
+    // parameter S8 = 4'b1000;
+    // wire [3:0] state, nextstate;
 
     // FSM to rotate through cells
-    always @(posedge clk)
+    always_ff @(posedge clk)
         if (reset) state <= S0;
-        else        state <= nextstate;
+        else       state <= nextstate;
 
     // next state logic
-    always @(*)
+    always_comb
         case (state)
             S0:     nextstate <= S1;
             S1:     nextstate <= S2;
@@ -125,75 +124,71 @@ module outputController (
         endcase
 
     // set output vectors based on current state
-    always @(*)
+    always_comb
         case (state)
             S0: begin // row 0 col 0
-                    r = 2'b00;
-                    c = 2'b00;
-                    xo = registers[1:0];
+                    assign row = 2'b00;
+                    assign col = 2'b00;
+                    assign xoro = registers[1:0];
                 end
-            S1: begin // r 0 c 1
-                    r = 2'b00;
-                    c = 2'b01;
-                    xo = registers[3:2];
+            S1: begin // row 0 col 1
+                    assign row = 2'b00;
+                    assign col = 2'b01;
+                    assign xoro = registers[3:2];
                 end
-            S2: begin // r 0 c 2
-                    r = 2'b00;
-                    c = 2'b10;
-                    xo = registers[5:4];
+            S2: begin // row 0 col 2
+                    assign row = 2'b00;
+                    assign col = 2'b10;
+                    assign xoro = registers[5:4];
                 end
-            S3: begin // r 1 c 0
-                    r = 2'b01;
-                    c = 2'b00;
-                    xo = registers[7:6];
+            S3: begin // row 1 col 0
+                    assign row = 2'b01;
+                    assign col = 2'b00;
+                    assign xoro = registers[7:6];
                 end
-            S4: begin // r 1 c 1
-                    r = 2'b01;
-                    c = 2'b01;
-                    xo = registers[9:8];
+            S4: begin // row 1 col 1
+                    assign row = 2'b01;
+                    assign col = 2'b01;
+                    assign xoro = registers[9:8];
                 end
-            S5: begin // r 1 c 2
-                    r = 2'b01;
-                    c = 2'b10;
-                    xo = registers[11:10];
+            S5: begin // row 1 col 2
+                    assign row = 2'b01;
+                    assign col = 2'b10;
+                    assign xoro = registers[11:10];
                 end
-            S6: begin // r 2 c 0
-                    r = 2'b10;
-                    c = 2'b00;
-                    xo = registers[13:12];
+            S6: begin // row 2 col 0
+                    assign row = 2'b10;
+                    assign col = 2'b00;
+                    assign xoro = registers[13:12];
                 end
-            S7: begin // r 2 c 1
-                    r = 2'b10;
-                    c = 2'b01;
-                    xo = registers[15:14];
+            S7: begin // row 2 col 1
+                    assign row = 2'b10;
+                    assign col = 2'b01;
+                    assign xoro = registers[15:14];
                 end
-            S8: begin // r 2 c 2
-                    r = 2'b10;
-                    c = 2'b10;
-                    xo = registers[17:16];
+            S8: begin // row 2 col 2
+                    assign row = 2'b10;
+                    assign col = 2'b10;
+                    assign xoro = registers[17:16];
                 end
             default: begin
-                    r = 2'b00;
-                    c = 2'b00;
-                    xo = registers[1:0];
+                    assign row = 2'b00;
+                    assign col = 2'b00;
+                    assign xoro = registers[1:0];
         endcase
-
-    assign row = r;
-    assign col = c;
-    assign xoro = xo;
 endmodule
 
 // registers with set & error logic
 module board (
-    input [1:0] clk,
-    input reset, error, 
-    input [1:0] xoro, row, col, 
-    output [17:0] registers, 
-    output write_error
+    input logic [1:0] clk,
+    input logic reset, error, 
+    input logic [1:0] xoro, row, col, 
+    output logic [17:0] registers, 
+    output logic write_error
 );
 
-    wire [17:0] regset; 
-    wire addr00, addr01, addr02, addr10, addr11, addr12, addr20, addr21, addr22;
+    logic [17:0] regset; 
+    logic addr00, addr01, addr02, addr10, addr11, addr12, addr20, addr21, addr22;
 
     // calculate address enable bits for each pair of registers
     assign addr00 = (row == 2'b00) & (col == 2'b00);
