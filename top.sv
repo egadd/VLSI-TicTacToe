@@ -105,49 +105,50 @@ module outputController (
             default: nextstate <= S0;
         endcase
 
+    // set output vectors based on current state
     always_comb
         case (state)
-            S0: begin
+            S0: begin // row 0 col 0
                     assign row = 2'b00;
                     assign col = 2'b00;
                     assign xoro = registers{1:0};
                 end
-            S1: begin
+            S1: begin // row 0 col 1
                     assign row = 2'b00;
                     assign col = 2'b01;
                     assign xoro = registers{3:2};
                 end
-            S2: begin
+            S2: begin // row 0 col 2
                     assign row = 2'b00;
                     assign col = 2'b10;
                     assign xoro = registers{5:4};
                 end
-            S3: begin
+            S3: begin // row 1 col 0
                     assign row = 2'b01;
                     assign col = 2'b00;
                     assign xoro = registers{7:6};
                 end
-            S4: begin
+            S4: begin // row 1 col 1
                     assign row = 2'b01;
                     assign col = 2'b01;
                     assign xoro = registers{9:8};
                 end
-            S5: begin
+            S5: begin // row 1 col 2
                     assign row = 2'b01;
                     assign col = 2'b10;
                     assign xoro = registers{11:10};
                 end
-            S6: begin
+            S6: begin // row 2 col 0
                     assign row = 2'b10;
                     assign col = 2'b00;
                     assign xoro = registers{13:12};
                 end
-            S7: begin
+            S7: begin // row 2 col 1
                     assign row = 2'b10;
                     assign col = 2'b01;
                     assign xoro = registers{15:14};
                 end
-            S8: begin
+            S8: begin // row 2 col 2
                     assign row = 2'b10;
                     assign col = 2'b10;
                     assign xoro = registers{17:16};
