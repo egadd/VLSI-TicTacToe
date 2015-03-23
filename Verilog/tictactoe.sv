@@ -37,8 +37,8 @@ endmodule
 // The input controller checks for input signal errors and tracks turns
 module inputController(input logic [1:0] clk,
                         input logic reset,
-                        input logic [1:0] xoro, row, col, win
-                        input logic ai_en, write_error
+                        input logic [1:0] xoro, row, col, win,
+                        input logic ai_en, write_error,
                         output logic error);
     // define states for X, O, and AI turns
     typedef enum logic [1:0] {X, O, AI} statetype;
@@ -175,6 +175,7 @@ module outputController (
                     assign row = 2'b00;
                     assign col = 2'b00;
                     assign xoro = registers[1:0];
+            end
         endcase
 endmodule
 
