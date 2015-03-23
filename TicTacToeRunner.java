@@ -1,40 +1,77 @@
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.FileReader;
+import java.io.PrintWriter;
 import java.io.IOException;
-
 import java.util.Arrays;
 
 public class TicTacToeRunner {
-    public static void main(String[] args) throws IOException {
-        TicTacToeBoard theBoard = new TicTacToeBoard();
+    public static void main(String[] args) throws IOException, InterruptedException {
+        TicTacToeBoard myBoard = new TicTacToeBoard();
 
         BufferedReader br = 
-            new BufferedReader(new InputStreamReader(System.in));
-        char[] input;
+            //new BufferedReader(new InputStreamReader(System.in));
+            new BufferedReader(new FileReader("inputVecs.txt"));
+        PrintWriter writer = new PrintWriter("javaOutputVecs.txt", "UTF-8");
+        String inputString;
         int xTurn = 1;
+        int outputIteration = 0;
+        char error = '0';
 
-        while ((input = br.readLine().toCharArray()) != null) {
+        while ((inputString = br.readLine()) != null) {
+            System.out.print(inputString + " - ");
+
+            char[] input = inputString.toCharArray();
             assert(input.length == 8);
             char reset = input[0];
-            char[] playerIn = Arrays.copyOfRange(input, 1, 3);
-            char[] rowIn = Arrays.copyOfRange(input, 3, 5);
-            char[] colIn = Arrays.copyOfRange(input, 5, 7);
+            int player = parseAsInt(Arrays.copyOfRange(input, 1, 3));
+            int row = parseAsInt(Arrays.copyOfRange(input, 3, 5));
+            int col = parseAsInt(Arrays.copyOfRange(input, 5, 7));
             char ai = input[7];
 
-            int player = parseAsInt(playerIn);
-            int row = parseAsInt(rowIn);
-            int col = parseAsInt(colIn);
+            if (reset == '1') {
+                myBoard = new TicTacToeBoard();
+                xTurn = 1;
+                outputIteration = 0;
+            } else {
+                if (player == 1 && xTurn == 0) { // O's turn
+                    if (!myBoard.makeOMove(row, col)) {
+                        error = '1';
+                    }
 
-            if (player == 1) { // O's turn
-                assert(theBoard.makeOMove(row, col));
-            } else if (player == 2) { // X's turn
-                assert(theBoard.makeXMove(row, col));
+                    xTurn = 1;
+                    //System.out.println("O move at (" + row + ", " + col + ").");
+                } else if (player == 2 && xTurn == 1) { // X's turn
+                    if (!myBoard.makeXMove(row, col)) {
+                        error = '1';
+                    }
+
+                    xTurn = 0;
+                    //System.out.println("X move at (" + row + ", " + col + ").");
+                } else {
+                    error = '1';
+                }
             }
 
-            System.out.println("Move at (" + row + ", " + col + ").");
+            //myBoard.prettyPrint();
+            
+            String win = "00";
+            if (myBoard.isXWin()) {
+                win = "10";
+            } else if (myBoard.isOWin()) {
+                win = "01";
+            }
 
-            xTurn = (xTurn + 1) % 2;
+            String outputVector = error + myBoard.getOutputVector(outputIteration) + win;
+
+            System.out.println(outputVector);
+            writer.println(outputVector);
+
+            outputIteration = (outputIteration + 1) % 9;
+            error = '0';
         }
+
+        writer.close();
     }
 
     private static int parseAsInt(char[] in) {
