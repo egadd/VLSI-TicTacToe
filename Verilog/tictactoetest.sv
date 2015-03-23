@@ -61,6 +61,13 @@ module tictactoetest();
             rowout, colout, colEx);
 	errors = errors + 1;
       end
+
+      if (err !== errEx) begin
+        $display("Error: row = %h col = %h xoro = %h, err = %h (expected %h)", 
+            rowin, colin, xoroin, err, errEx);
+  errors = errors + 1;
+      end
+      
     vectornum = vectornum + 1;
     if (testvectors[vectornum] === 17'bx) begin
       $display("%d tests completed with %d errors", 
