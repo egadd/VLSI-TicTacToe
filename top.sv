@@ -78,6 +78,7 @@ endmodule
 module outputController (
     input logic [1:0] clk,    // two-phase clock
     input logic reset,  
+    input logic [17:0] registers,
     output logic [1:0] xoro, row, col
 );
 
@@ -102,4 +103,59 @@ module outputController (
             S7:     nextstate <= S8;
             S8:     nextstate <= S0;
             default: nextstate <= S0;
+        endcase
+
+    always_comb
+        case (state)
+            S0: begin
+                    assign row = 2'b00;
+                    assign col = 2'b00;
+                    assign xoro = registers{1:0};
+                end
+            S1: begin
+                    assign row = 2'b00;
+                    assign col = 2'b01;
+                    assign xoro = registers{3:2};
+                end
+            S2: begin
+                    assign row = 2'b00;
+                    assign col = 2'b10;
+                    assign xoro = registers{5:4};
+                end
+            S3: begin
+                    assign row = 2'b01;
+                    assign col = 2'b00;
+                    assign xoro = registers{7:6};
+                end
+            S4: begin
+                    assign row = 2'b01;
+                    assign col = 2'b01;
+                    assign xoro = registers{9:8};
+                end
+            S5: begin
+                    assign row = 2'b01;
+                    assign col = 2'b10;
+                    assign xoro = registers{11:10};
+                end
+            S6: begin
+                    assign row = 2'b10;
+                    assign col = 2'b00;
+                    assign xoro = registers{13:12};
+                end
+            S7: begin
+                    assign row = 2'b10;
+                    assign col = 2'b01;
+                    assign xoro = registers{15:14};
+                end
+            S8: begin
+                    assign row = 2'b10;
+                    assign col = 2'b10;
+                    assign xoro = registers{17:16};
+                end
+            default: begin
+                    assign row = 2'b00;
+                    assign col = 2'b00;
+                    assign xoro = registers{1:0};
+        endcase
+
 endmodule
