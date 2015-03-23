@@ -7,7 +7,7 @@
  */
 
 // top level module containing the entire logic of the chip
- module tictactoe(input logic [1:0] clk,
+ module tictactoe(input logic clk,
                   input logic reset,
                   input logic [1:0] xoroin, rowin, colin,
                   input logic ai_en,
@@ -22,22 +22,22 @@
                             write_error, input_error);
 
     // board state registers
-    board b (clk, reset, error, xoroin, rowin, colin, registers, write_error);
+    board b (clk, reset, input_error, xoroin, rowin, colin, registers, write_error);
 
     // output controller
     outputController outcon (clk, reset, registers, xoroout, rowout, colout);
 
     // win checker
-    winChecker wc (clk, registers, win);
+    winChecker wc (registers, win);
 
     // AI logic
 
     assign err = write_error | input_error;
-    
+
 endmodule
 
 // The input controller checks for input signal errors and tracks turns
-module inputController(input logic [1:0] clk,
+module inputController(input logic clk,
                         input logic reset,
                         input logic [1:0] xoro, row, col, win,
                         input logic ai_en, write_error,
@@ -86,7 +86,7 @@ endmodule
 // The output controller contantly cycles through the cells and sends them to
 // the output pins
 module outputController (
-    input logic [1:0] clk,    // two-phase clock
+    input logic clk,    // two-phase clock
     input logic reset,  
     input logic [17:0] registers,
     output logic [1:0] xoro, row, col
@@ -184,7 +184,7 @@ endmodule
 
 // registers with set & error logic
 module board (
-    input logic [1:0] clk,
+    input logic clk,
     input logic reset, error, 
     input logic [1:0] xoro, row, col, 
     output logic [17:0] registers, 
@@ -207,7 +207,7 @@ module board (
 
     // if a register is being written to but it already holds X or O, bad news bears
     assign write_error = 
-            (addr00 & (registers[1] | registers[0])) | 
+           ((addr00 & (registers[1] | registers[0])) | 
             (addr01 & (registers[3] | registers[2])) | 
             (addr02 & (registers[5] | registers[4])) | 
             (addr10 & (registers[7] | registers[6])) | 
@@ -215,7 +215,7 @@ module board (
             (addr12 & (registers[11] | registers[10])) | 
             (addr20 & (registers[13] | registers[12])) | 
             (addr21 & (registers[15] | registers[14])) | 
-            (addr22 & (registers[17] | registers[16]));
+            (addr22 & (registers[17] | registers[16])) & (xoro[1] | xoro[2]));
 
     // only assign to a register if no errors and it is the addressed pair and it is
     // the appropriate register for x or o
@@ -238,12 +238,11 @@ endmodule
 // sets win output to x or o based if one has won
 // assumes only one player will win, otherwise could output either
 module winChecker(
-    input logic [1:0] clk, 
     input logic [17:0] registers, 
     output logic [1:0] winstate
 );
 
-    logic [1:0] vertical, horizontal, diagonal;
+    logic [1:0] vertical, horizontal, diagonal, win, tie;
     
     // vertical wins
     assign vertical = ((((registers[1:0] == registers[7:6]) & 
@@ -269,5 +268,19 @@ module winChecker(
                          (registers[9:8] == registers[13:12])) & registers[5:4]));
 
     // or them together to get win condition
-    assign winstate = vertical | horizontal | diagonal;
+    assign win = vertical | horizontal | diagonal;
+
+    // tie if all full
+    always_comb
+        if (~(win[1] | win[0])) begin
+            if ((registers[1] | registers[0]) & (registers[3] | registers[2]) &
+                (registers[5] | registers[4]) & (registers[7] | registers[6]) &
+                (registers[9] | registers[8]) & (registers[11] | registers[10]) &
+                (registers[13] | registers[12]) & (registers[15] | registers[14]) &
+                (registers[17] | registers[16]))   
+                 tie = 2'b11;
+            else tie = 2'b00;
+        end
+
+    assign winstate = tie | win;
 endmodule

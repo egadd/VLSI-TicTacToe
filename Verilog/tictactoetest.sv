@@ -25,7 +25,7 @@ module tictactoetest();
     $dumpvars(1, clk, reset, rowin, colin, xoroin, rowout, colout, xoroout);
     $readmemb("tictactoe.tv", testvectors); // load test vectors
     vectornum = 0; errors = 0;
-    reset = 1; #17; reset = 0; // come out of reset before cycle 2
+    // reset = 1; #17; reset = 0; // come out of reset before cycle 2
   end
 
   // apply test vectors on rising edge of clk
@@ -33,11 +33,12 @@ module tictactoetest();
     #1; 
     {reset, xoroin, rowin, colin, ai_en, errEx, xoroEx, rowEx, colEx, winEx} = 
                                                      testvectors[vectornum];
+    $display("Test #, Vector: %h, %b", vectornum, testvectors[vectornum]);
   end
 
   // check results on falling edge of clk
   always @(negedge clk)
-    if (!reset) begin // skip during reset
+    begin // skip during reset
       if (xoroout !== xoroEx) begin
         $display("Error: row = %h, col = %h, xoro = %h (expected %h)",
 	        rowout, colout, xoroout, xoroEx);
