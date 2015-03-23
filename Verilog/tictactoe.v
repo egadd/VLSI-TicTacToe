@@ -7,15 +7,15 @@
  */
 
 // top level module containing the entire logic of the chip
- module tictactoe(input logic [1:0] clk,
-                  input logic reset,
-                  input logic [1:0] xoroin, rowin, colin,
-                  input logic ai_en,
-                  output logic err,
-                  output logic [1:0] xoroout, rowout, colout, win);
+ module tictactoe(input [1:0] clk,
+                  input reset,
+                  input [1:0] xoroin, rowin, colin,
+                  input ai_en,
+                  output err,
+                  output [1:0] xoroout, rowout, colout, win);
 
-    logic write_error;
-    logic [17:0] registers;
+    wire write_error;
+    wire [17:0] registers;
 
     // input controller
     inputController incon (clk, reset, xoroin, rowin, colin, win, ai_en,
@@ -28,32 +28,37 @@
     outputController outcon (clk, reset, registers, xoroout, rowout, colout);
 
     // win checker
-
+    winChecker wc (clk, registers, win);
 
     // AI logic
 
 endmodule
 
 // The input controller checks for input signal errors and tracks turns
-module inputController(input logic [1:0] clk,
-                        input logic reset,
-                        input logic [1:0] xoro, row, col, win
-                        input logic ai_en, write_error
-                        output logic error);
+module inputController(input [1:0] clk,
+                        input reset,
+                        input [1:0] xoro, row, col, win
+                        input ai_en, write_error
+                        output error);
     // define states for X, O, and AI turns
-    typedef enum logic [1:0] {X, O, AI} statetype;
-    statetype [1:0] state, nextstate;
+    // typedef enum wire [1:0] {X, O, AI} statetype;
+    // statetype [1:0] state, nextstate;
+    // List states
+    parameter X = 2'b00;
+    parameter O = 2'b01;
+    parameter AI = 2'b10;
+    wire [1:0] state, nextstate;
 
     // internal signals
-    logic gameover_err, parse_err, turn_err;
+    wire gameover_err, parse_err, turn_err;
 
     // turn tracking FSM state register
-    always_ff @(posedge clk)
+    always @(posedge clk)
         if (reset) state <= ai_en ? AI : X;
         else       state <= nextstate;
 
     // error checking logic
-    always_comb
+    always @(*)
         begin
             assign gameover_err = (win[1] | win[0]) & (xoro[1] | xoro[0]);
             assign parse_err = (row[1] & row[0]) | (col[1] & col[0]) | 
@@ -65,7 +70,7 @@ module inputController(input logic [1:0] clk,
         end
 
     // next state logic
-    always_comb
+    always @(*)
         case (state)
             X:          nextstate <= error ? state : O;
             O:          nextstate <= error ? state : ai_en ? AI : X;
@@ -78,22 +83,33 @@ endmodule
 // The output controller contantly cycles through the cells and sends them to
 // the output pins
 module outputController (
-    input logic [1:0] clk,    // two-phase clock
-    input logic reset,  
-    input logic [17:0] registers,
-    output logic [1:0] xoro, row, col
+    input [1:0] clk,    // two-phase clock
+    input reset,  
+    input [17:0] registers,
+    output [1:0] xoro, row, col
 );
 
-    typedef enum logic [3:0] {S0,S1,S2,S3,S4,S5,S6,S7,S8} statetype;
-    statetype [3:0] state, nextstate;
-    
+    // typedef enum logic [3:0] {S0,S1,S2,S3,S4,S5,S6,S7,S8} statetype;
+    // statetype [3:0] state, nextstate;
+    // List states
+    parameter S0 = 4'b0000;
+    parameter S1 = 4'b0001;
+    parameter S2 = 4'b0010;
+    parameter S3 = 4'b0011;
+    parameter S4 = 4'b0100;
+    parameter S5 = 4'b0101;
+    parameter S6 = 4'b0110;
+    parameter S7 = 4'b0111;
+    parameter S8 = 4'b1000;
+    wire [3:0] state, nextstate;
+
     // FSM to rotate through cells
-    always_ff @(posedge clk)
+    always @(posedge clk)
         if (reset) state <= S0;
         else        state <= nextstate;
 
     // next state logic
-    always_comb
+    always @(*)
         case (state)
             S0:     nextstate <= S1;
             S1:     nextstate <= S2;
@@ -164,15 +180,15 @@ endmodule
 
 // registers with set & error logic
 module board (
-    input logic [1:0] clk,
-    input logic reset, error, 
-    input logic [1:0] xoro, row, col, 
-    output logic [17:0] registers, 
-    output logic write_error
+    input [1:0] clk,
+    input reset, error, 
+    input [1:0] xoro, row, col, 
+    output [17:0] registers, 
+    output write_error
 );
 
-    logic [17:0] regset; 
-    logic addr00, addr01, addr02, addr10, addr11, addr12, addr20, addr21, addr22;
+    wire [17:0] regset; 
+    wire addr00, addr01, addr02, addr10, addr11, addr12, addr20, addr21, addr22;
 
     // calculate address enable bits for each pair of registers
     assign addr00 = (row == 2'b00) & (col == 2'b00);
@@ -210,7 +226,7 @@ module board (
     assign regset[17:16] = addr22 & ~error & ~write_error & xoro;
      
     // synchronous reset of registers, or with regset signal for board control
-    always_ff @(posedge clk)
+    always @(posedge clk)
         if (reset) registers <= 17'b0;
         else registers <= registers | regset;
 endmodule
