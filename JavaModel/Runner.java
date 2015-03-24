@@ -13,19 +13,19 @@ public class Runner {
             // Read from input
             // new BufferedReader(new InputStreamReader(System.in));
             // Read from inputVecs.txt
-            new BufferedReader(new FileReader("inputVecs.txt"));
-        BufferedReader outReader =
-            new BufferedReader(new FileReader("outputVecs.txt"));
+            new BufferedReader(new FileReader("../Verilog/tictactoe.tv"));
         PrintWriter writer = new PrintWriter("javaOutputVecs.out", "UTF-8");
 
-        String inputVector;
+        String vector;
         boolean xTurn = true;
         int outputIteration = 0;
         int error = 0;
 
-        while ((inputVector = br.readLine()) != null) {
-            char[] input = inputVector.toCharArray();
-            assert(input.length == 8);
+        while ((vector = br.readLine()) != null) {
+            char[] input = Arrays.copyOfRange(vector.toCharArray(), 0, 8);
+            char[] expectedOutput = Arrays.copyOfRange(vector.toCharArray(), 9, 18);
+            assert(input.length == 8) : Arrays.toString(input);
+            assert(expectedOutput.length == 9) : Arrays.toString(expectedOutput);
 
             // Parse input signals from vector
             boolean reset = (input[0] != '0');
@@ -40,6 +40,8 @@ public class Runner {
                 win = "10";
             } else if (myBoard.isOWin()) {
                 win = "01";
+            } else if (myBoard.isDraw()) {
+                win = "11";
             }
 
             // ERROR if invalid input
@@ -57,6 +59,9 @@ public class Runner {
                         // AI makes a move
                         myBoard.makeAIMove();
                         xTurn = false;
+                    } else if (ai_en && !xTurn) {
+                        // AI cannot go out of turn
+                        error = 1;
                     } else if (player == 0) {
                         // make no move
                     } else if (win != "00") {
@@ -88,14 +93,13 @@ public class Runner {
             // myBoard.prettyPrint();
 
             String outputVector = error + myBoard.getOutputVector(outputIteration) + win;
-            String expectedOutput = outReader.readLine();
-            System.out.println(inputVector + " - " +
+            System.out.println(new String(input) + " - " +
                                outputVector + " - " +
-                               expectedOutput);
+                               new String(expectedOutput));
             writer.println(outputVector);
 
             // Did we match the prediction?
-            if (!expectedOutput.equals(outputVector)) {
+            if (!new String(expectedOutput).equals(outputVector)) {
                 System.out.println("FAIL");
                 myBoard.prettyPrint();
             }

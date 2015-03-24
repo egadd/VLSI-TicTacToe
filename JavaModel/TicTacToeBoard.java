@@ -71,6 +71,24 @@ public class TicTacToeBoard {
         return winChecker('O');
     }
 
+    public boolean isDraw() {
+        // If somebody won, not a draw
+        if (isXWin() || isOWin()) {
+            return false;
+        }
+
+        // If a cell is still empty, not a draw
+        for (int r = 0; r < 3; r++) {
+            for (int c = 0; c < 3; c++) {
+                if (cells[r][c].isEmpty()) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
     private boolean winChecker(char xo) {
         // check horizontal wins
         for (int row = 0; row < 3; row++) {
