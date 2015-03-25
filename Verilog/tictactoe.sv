@@ -286,7 +286,9 @@ module winChecker(
 
     logic [1:0] vertical, horizontal, diagonal, win, tie;
     
-    // vertical wins
+    // vertical wins - if all three cells in a column match then set the win logic
+    //                 to the value in the registers. If they are empty, this still
+    //                 works since the condition will be low.
     assign vertical = ((((registers[1:0] == registers[7:6]) & 
                          (registers[7:6] == registers[13:12])) ? registers[1:0] : 2'b00) |
                        (((registers[3:2] == registers[9:8]) & 
@@ -294,7 +296,7 @@ module winChecker(
                        (((registers[5:4] == registers[11:10]) & 
                          (registers[11:10] == registers[17:16])) ? registers[5:4] : 2'b00));
 
-    // horizontal wins
+    // horizontal wins - all three cells in a row are equal.
     assign horizontal = 
                       ((((registers[1:0] == registers[3:2]) & 
                          (registers[3:2] == registers[5:4])) ? registers[1:0] : 2'b00) |
@@ -303,7 +305,7 @@ module winChecker(
                        (((registers[13:12] == registers[15:14]) & 
                          (registers[15:14] == registers[17:16])) ? registers[13:12] : 2'b00));
 
-    // diagonal wins
+    // diagonal wins - all three cells on a diagonal are equal.
     assign diagonal = ((((registers[1:0] == registers[9:8]) & 
                          (registers[9:8] == registers[17:16])) ? registers[1:0] : 2'b00) |
                        (((registers[5:4] == registers[9:8]) & 
@@ -314,20 +316,24 @@ module winChecker(
 
     // tie if all full
     always_comb
+        // If the game hasn't been won, check if every cell is occupied
         if (~(win[1] | win[0])) begin
             if ((registers[1] | registers[0]) & (registers[3] | registers[2]) &
                 (registers[5] | registers[4]) & (registers[7] | registers[6]) &
                 (registers[9] | registers[8]) & (registers[11] | registers[10]) &
                 (registers[13] | registers[12]) & (registers[15] | registers[14]) &
                 (registers[17] | registers[16]))   
-                 tie = 2'b11;
-            else tie = 2'b00;
+                 tie = 2'b11; // If all are occupied, the game was a draw.
+            else tie = 2'b00; // Else the game can continue.
         end
 
+    // We want to pull the win state low on reset without waiting for the board
+    // registers to update on the next clock cycle.
     assign winstate =  reset ? 2'b00 : (tie | win);
 endmodule
 
 // The ai module outputs a suggested move based on the current state of the board
+// The ai's first move is always to the top left corner
 module ai ( input logic [17:0] registers, 
             output logic [1:0] xoro, row, col);
 
@@ -335,6 +341,8 @@ module ai ( input logic [17:0] registers,
     logic [3:0] cellnum;
 
     logic [8:0] notoccupied;
+    // notoccupied is low when the board has a move (X or O) in the corresponding cell
+    // used to determine move sequences for AI
     assign notoccupied = ~{
         (registers[17] | registers[16]), (registers[15] | registers[14]), 
         (registers[13] | registers[12]), (registers[11] | registers[10]), 
@@ -345,26 +353,35 @@ module ai ( input logic [17:0] registers,
 
     always_comb
         begin
-            if (registers[10]) // o in cell 6, single case
+            if (registers[10]) // O in cell 6, single case
                 casex (notoccupied)
                     9'bxxxxxxxx1: begin row <= 2'b00; col <= 2'b00; end
+                    // second move bottom left
                     9'bxx1xxxxx0: begin row <= 2'b10; col <= 2'b00; end
+                    // third move middle for the fork
                     9'bxx0x1xxx0: begin row <= 2'b01; col <= 2'b01; end
+                    // next moves remaining corners for the win
                     9'bxx0x0x1x0: begin row <= 2'b00; col <= 2'b10; end
                     9'b1x0x0x0x0: begin row <= 2'b10; col <= 2'b10; end
+                    // remaining moves just in case AI called while game in progress
                     9'b0x0x0x000: begin row <= 2'b00; col <= 2'b01; end
                     9'b0x0x01010: begin row <= 2'b01; col <= 2'b00; end
                     9'b010x00010: begin row <= 2'b10; col <= 2'b01; end
                     9'b000000010: begin row <= 2'b01; col <= 2'b10; end
-                    default: begin row <= 2'b11; col <= 2'b00; end
+                    default: begin row <= 2'b11; col <= 2'b11; end
                 endcase
-            else if (registers[12] | (registers[6] & ~registers[13])) // two part case
+            else if (registers[12] | (registers[6] & ~registers[13])) 
+                // two part case - O moves to cells 4 or 7
                 casex (notoccupied)
                     9'bxxxxxxxx1: begin row <= 2'b00; col <= 2'b00; end
+                    // second move top right
                     9'bxxxxxx1x0: begin row <= 2'b00; col <= 2'b10; end
+                    // third move middle right
                     9'bxxx1xx0x0: begin row <= 2'b01; col <= 2'b10; end
+                    // then take lower two-thirds of middle column
                     9'bx1x0xx0x0: begin row <= 2'b10; col <= 2'b01; end
                     9'bx0x01x0x0: begin row <= 2'b01; col <= 2'b01; end
+                    // rest of moves already have tie guaranteed
                     9'bx0x0010x0: begin row <= 2'b01; col <= 2'b00; end
                     9'bx010000x0: begin row <= 2'b10; col <= 2'b00; end
                     9'bx00000010: begin row <= 2'b00; col <= 2'b01; end
@@ -372,13 +389,18 @@ module ai ( input logic [17:0] registers,
                     default: begin row <= 2'b01; col <= 2'b00; end
                 endcase
             else
+                // default case, no special changes due to O's first move
                 casex (notoccupied)
                     9'bxxxxxxxx1: begin row <= 2'b00; col <= 2'b00; end
+                    // second move to bottom left corner
                     9'bxx1xxxxx0: begin row <= 2'b10; col <= 2'b00; end
+                    // then the middle right edge - can now always tie
                     9'bxx01xxxx0: begin row <= 2'b01; col <= 2'b10; end
+                    // make sure to grab one cell in the center column
                     9'bxx001xxx0: begin row <= 2'b01; col <= 2'b01; end
                     9'bxx000xx10: begin row <= 2'b00; col <= 2'b01; end
                     9'bx1000xx00: begin row <= 2'b10; col <= 2'b01; end
+                    // rest of moves don't matter, tie is guaranteed
                     9'bx0000x100: begin row <= 2'b00; col <= 2'b10; end
                     9'b10000x000: begin row <= 2'b10; col <= 2'b10; end
                     9'b000001000: begin row <= 2'b01; col <= 2'b00; end
