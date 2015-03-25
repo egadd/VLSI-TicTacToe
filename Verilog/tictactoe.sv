@@ -64,12 +64,12 @@
 endmodule
 
 // The input controller checks for input signal errors and tracks turns
-module inputController(input logic ph1, ph2,
+module inputController(input logic ph1, ph2,        // two phase clock
                         input logic reset,
-                        input logic [1:0] xoro, row, col, win,
+                        input logic [1:0] xoro_in, row_in, col_in, win,
                         input logic ai_en, write_err, 
-                        input logic [1:0] xoroai, rowai, colai, 
-                        output logic [1:0] xorowrite, rowwrite, colwrite, 
+                        input logic [1:0] xoro_ai, row_ai, col_ai, 
+                        output logic [1:0] xoro_write, row_write, col_write, 
                         output logic input_err);
     // Define turn states
     parameter X = 2'b10;
@@ -92,13 +92,13 @@ module inputController(input logic ph1, ph2,
     always_comb
         begin
             // some errors only happen if we are trying to write
-            assign write = xoro[1] | xoro[0]; 
+            assign write = xoro_in[1] | xoro_in[0]; 
 
             // Check inputs for validity, correct turn, and not a completed game
             assign gameover_err = (win[1] | win[0]) & write;
-            assign parse_err = (row[1] & row[0]) | (col[1] & col[0]) | 
-                                (xoro[1] & xoro[0]);
-            assign turn_err = ((state == X) & xoro[0]) | ((state == O) & xoro[1]);
+            assign parse_err = (row_in[1] & row_in[0]) | (col_in[1] & col_in[0]) | 
+                                (xoro_in[1] & xoro_in[0]);
+            assign turn_err = ((state == X) & xoro_in[0]) | ((state == O) & xoro_in[1]);
             assign ai_err = (state == O) & ai_en;
             
             // input_error goes high when any of these errors are present
@@ -120,14 +120,14 @@ module inputController(input logic ph1, ph2,
     always_comb
         begin
             if (ai_en & (state == X)) begin
-                xorowrite = xoroai;
-                rowwrite = rowai;
-                colwrite = colai;
+                xoro_write = xoro_ai;
+                row_write = row_ai;
+                col_write = col_ai;
             end
             else begin
-                xorowrite = xoro;
-                rowwrite = row;
-                colwrite = col;
+                xoro_write = xoro_in;
+                row_write = row_in;
+                col_write = col_in;
             end
         end
 
@@ -244,7 +244,7 @@ endmodule
 
 // registers with set & error logic
 module board (
-    input logic ph1, ph2,
+    input logic ph1, ph2,              // two phase clock
     input logic reset, input_error, 
     input logic [1:0] xoro, row, col, 
     output logic [17:0] registers, 
@@ -291,10 +291,9 @@ module board (
      
     // synchronous reset of registers, or with regset signal for board control
     flopenr #18 boardmem(ph1, ph2, reset, 1'b1, regset | registers, registers);
-    // always @(posedge clk, posedge reset)
-    //     if (reset) registers <= 17'b0;
-    //     else registers <= registers | regset;
+
 endmodule
+
 
 // sets win output to x or o based if one has won
 // assumes only one player will win, otherwise could output either
