@@ -30,6 +30,7 @@
     //  * ai_en high when not X's turn
     //  * move out of turn
     //  * invalid row, col, or player (11)
+    //  * move when game over
     logic input_error;
 
     // error if trying to write to a space that already has an X or O
@@ -66,29 +67,26 @@ endmodule
 module inputController(input logic ph1, ph2,
                         input logic reset,
                         input logic [1:0] xoro, row, col, win,
-                        input logic ai_en, write_error, 
+                        input logic ai_en, write_err, 
                         input logic [1:0] xoroai, rowai, colai, 
                         output logic [1:0] xorowrite, rowwrite, colwrite, 
-                        output logic error);
-    // define states for X, O, and AI turns
-    // typedef enum logic [1:0] {X, O, AI} statetype;
-    // statetype [1:0] state, nextstate;
-    // List states
+                        output logic input_err);
+    // Define turn states
     parameter X = 2'b10;
     parameter O = 2'b01;
-    // parameter AI = 2'b00;
-    logic [1:0] state, nextstate, resetval;
 
-    // internal signals
-    logic gameover_err, parse_err, turn_err, ai_err, full_err, write;
+    // store the current turn, the next turn
+    logic [1:0] state, nextstate;
 
-    assign resetval = X; // ai_en ? AI : X;
+    logic gameover_err;        // writing when the game is over
+    logic parse_err;           // invalid xoro, row, col input (11)
+    logic turn_err;            // move out of turn
+    logic ai_err;              // ai move out of turn
+    logic full_err;            // OR of all above errors + write_err (passed in)
+    logic write;               // high if attempting to make a manual move
 
     // turn tracking FSM state register
-    flopenrval #2 statereg(ph1, ph2, reset, 1'b1, resetval, nextstate, state);
-    // always_ff @(posedge clk, posedge reset)
-    //     if (reset) state <= ai_en ? AI : X;
-    //     else       state <= nextstate;
+    flopenrval #2 statereg(ph1, ph2, reset, 1'b1, X, nextstate, state);
 
     // error checking logic
     always_comb
@@ -103,9 +101,11 @@ module inputController(input logic ph1, ph2,
             assign turn_err = ((state == X) & xoro[0]) | ((state == O) & xoro[1]);
             assign ai_err = (state == O) & ai_en;
             
-            // error goes high when any of these errors are present
-            assign error = gameover_err | parse_err | turn_err | ai_err;
-            assign full_err = error | write_error;
+            // input_error goes high when any of these errors are present
+            assign input_err = gameover_err | parse_err | turn_err | ai_err;
+            
+            // if there are any errors including write, must block writes
+            assign full_err = input_err | write_err;
         end
 
     // next state logic
@@ -113,7 +113,6 @@ module inputController(input logic ph1, ph2,
         case (state)
             X:          nextstate <= ((write | ai_en) & ~full_err) ? O : X;
             O:          nextstate <= (write & ~full_err) ? X : O;
-            // AI:         nextstate <= O;
             default:    nextstate <= X;
         endcase
 
