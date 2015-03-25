@@ -36,7 +36,7 @@ module tictactoetest();
     #1; 
     {reset, xoroin, rowin, colin, ai_en, errEx, xoroEx, rowEx, colEx, winEx} = 
                                                      testvectors[vectornum];
-    $display("Test #, Vector: %h, %b", vectornum, testvectors[vectornum]);
+    $display("Test #, Vector: %d, %b", vectornum, testvectors[vectornum]);
   end
 
   // check results on falling edge of clk

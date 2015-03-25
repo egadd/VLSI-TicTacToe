@@ -55,13 +55,13 @@ module inputController(input logic ph1, ph2,
     // List states
     parameter X = 2'b10;
     parameter O = 2'b01;
-    parameter AI = 2'b00;
+    // parameter AI = 2'b00;
     logic [1:0] state, nextstate, resetval;
 
     // internal signals
-    logic gameover_err, parse_err, turn_err, full_err, write;
+    logic gameover_err, parse_err, turn_err, ai_err, full_err, write;
 
-    assign resetval = ai_en ? AI : X;
+    assign resetval = X; // ai_en ? AI : X;
 
     // turn tracking FSM state register
     flopenrval #2 statereg(ph1, ph2, reset, 1'b1, resetval, nextstate, state);
@@ -79,27 +79,27 @@ module inputController(input logic ph1, ph2,
             assign gameover_err = (win[1] | win[0]) & write;
             assign parse_err = (row[1] & row[0]) | (col[1] & col[0]) | 
                                 (xoro[1] & xoro[0]);
-            assign turn_err = ((state == X) & xoro[0]) | ((state == O) & xoro[1]) | 
-                                ((state == AI) & write);
+            assign turn_err = ((state == X) & xoro[0]) | ((state == O) & xoro[1]);
+            assign ai_err = (state == O) & ai_en;
             
             // error goes high when any of these errors are present
-            assign error = gameover_err | parse_err | turn_err;
+            assign error = gameover_err | parse_err | turn_err | ai_err;
             assign full_err = error | write_error;
         end
 
     // next state logic
     always_comb
         case (state)
-            X:          nextstate <= (write & ~full_err) ? O : X;
-            O:          nextstate <= (write & ~full_err) ? (ai_en ? AI : X) : O;
-            AI:         nextstate <= O;
+            X:          nextstate <= ((write | ai_en) & ~full_err) ? O : X;
+            O:          nextstate <= (write & ~full_err) ? X : O;
+            // AI:         nextstate <= O;
             default:    nextstate <= X;
         endcase
 
     // write source selection
     always_comb
         begin
-            if (state == AI) begin
+            if (ai_en & (state == X)) begin
                 xorowrite = xoroai;
                 rowwrite = rowai;
                 colwrite = colai;
@@ -335,7 +335,7 @@ module ai ( input logic [17:0] registers,
     logic [3:0] cellnum;
 
     logic [8:0] notoccupied;
-    assign notoccupied = {
+    assign notoccupied = ~{
         (registers[17] | registers[16]), (registers[15] | registers[14]), 
         (registers[13] | registers[12]), (registers[11] | registers[10]), 
         (registers[9] | registers[8]), (registers[7] | registers[6]), 
@@ -347,15 +347,15 @@ module ai ( input logic [17:0] registers,
         begin
             if (registers[10]) // o in cell 6, single case
                 casez (notoccupied)
-                    9'bxxxxxxxx0: begin row <= 2'b00; col <= 2'b00; end
-                    9'bxx0xxxxx1: begin row <= 2'b10; col <= 2'b00; end
-                    9'bxx1x0xxx1: begin row <= 2'b01; col <= 2'b01; end
-                    9'bxx1x1x0x1: begin row <= 2'b00; col <= 2'b10; end
-                    9'b0x1x1x1x1: begin row <= 2'b10; col <= 2'b10; end
-                    9'b1x1x1x101: begin row <= 2'b00; col <= 2'b01; end
-                    9'b1x1x10111: begin row <= 2'b01; col <= 2'b00; end
-                    9'b101x11111: begin row <= 2'b10; col <= 2'b01; end
-                    9'b111011111: begin row <= 2'b01; col <= 2'b10; end
+                    9'bxxxxxxxx1: begin row <= 2'b00; col <= 2'b00; end
+                    9'bxx1xxxxx0: begin row <= 2'b10; col <= 2'b00; end
+                    9'bxx0x1xxx0: begin row <= 2'b01; col <= 2'b01; end
+                    9'bxx0x0x1x0: begin row <= 2'b00; col <= 2'b10; end
+                    9'b1x0x0x0x0: begin row <= 2'b10; col <= 2'b10; end
+                    9'b0x0x0x000: begin row <= 2'b00; col <= 2'b01; end
+                    9'b0x0x01010: begin row <= 2'b01; col <= 2'b00; end
+                    9'b010x00010: begin row <= 2'b10; col <= 2'b01; end
+                    9'b000000010: begin row <= 2'b01; col <= 2'b10; end
                     default: begin row <= 2'b00; col <= 2'b00; end
                 endcase
             else if (registers[6] | (registers[12] & ~registers[13])) // two part case
