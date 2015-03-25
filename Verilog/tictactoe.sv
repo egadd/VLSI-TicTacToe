@@ -346,7 +346,7 @@ module ai ( input logic [17:0] registers,
     always_comb
         begin
             if (registers[10]) // o in cell 6, single case
-                casez (notoccupied)
+                casex (notoccupied)
                     9'bxxxxxxxx1: begin row <= 2'b00; col <= 2'b00; end
                     9'bxx1xxxxx0: begin row <= 2'b10; col <= 2'b00; end
                     9'bxx0x1xxx0: begin row <= 2'b01; col <= 2'b01; end
@@ -356,10 +356,10 @@ module ai ( input logic [17:0] registers,
                     9'b0x0x01010: begin row <= 2'b01; col <= 2'b00; end
                     9'b010x00010: begin row <= 2'b10; col <= 2'b01; end
                     9'b000000010: begin row <= 2'b01; col <= 2'b10; end
-                    default: begin row <= 2'b00; col <= 2'b00; end
+                    default: begin row <= 2'b11; col <= 2'b00; end
                 endcase
-            else if (registers[6] | (registers[12] & ~registers[13])) // two part case
-                casez (notoccupied)
+            else if (registers[12] | (registers[6] & ~registers[13])) // two part case
+                casex (notoccupied)
                     9'bxxxxxxxx1: begin row <= 2'b00; col <= 2'b00; end
                     9'bxxxxxx1x0: begin row <= 2'b00; col <= 2'b10; end
                     9'bxxx1xx0x0: begin row <= 2'b01; col <= 2'b10; end
@@ -369,10 +369,10 @@ module ai ( input logic [17:0] registers,
                     9'bx010000x0: begin row <= 2'b10; col <= 2'b00; end
                     9'bx00000010: begin row <= 2'b00; col <= 2'b01; end
                     9'b100000000: begin row <= 2'b10; col <= 2'b10; end
-                    default: begin row <= 2'b00; col <= 2'b00; end
+                    default: begin row <= 2'b01; col <= 2'b00; end
                 endcase
             else
-                casez (notoccupied)
+                casex (notoccupied)
                     9'bxxxxxxxx1: begin row <= 2'b00; col <= 2'b00; end
                     9'bxx1xxxxx0: begin row <= 2'b10; col <= 2'b00; end
                     9'bxx01xxxx0: begin row <= 2'b01; col <= 2'b10; end
@@ -382,7 +382,7 @@ module ai ( input logic [17:0] registers,
                     9'bx0000x100: begin row <= 2'b00; col <= 2'b10; end
                     9'b10000x000: begin row <= 2'b10; col <= 2'b10; end
                     9'b000001000: begin row <= 2'b01; col <= 2'b00; end
-                    default: begin row <= 2'b00; col <= 2'b00; end
+                    default: begin row <= 2'b10; col <= 2'b00; end
                 endcase
         end
 
