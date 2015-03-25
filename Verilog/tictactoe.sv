@@ -16,21 +16,26 @@
 
     logic write_error, input_error;
     logic [17:0] registers;
+    logic [1:0] xoroai, rowai, colai;
+    logic [1:0] xoro, row, col;
 
     // input controller
-    inputController incon (ph1, ph2, reset, xoroin, rowin, colin, win, ai_en,
-                            write_error, input_error);
+    inputController incon (ph1, ph2, reset, xoroin, rowin, colin, win, ai_en, 
+                            write_error, 
+                            xoroai, rowai, colai, xoro, row, col,
+                            input_error);
 
     // board state registers
-    board b (ph1, ph2, reset, input_error, xoroin, rowin, colin, registers, write_error);
+    board b (ph1, ph2, reset, input_error, xoro, row, col, registers, write_error);
 
     // output controller
     outputController outcon (ph1, ph2, reset, registers, xoroout, rowout, colout);
 
     // win checker
-    winChecker wc (registers, win);
+    winChecker wc (reset, registers, win);
 
     // AI logic
+    ai genius (registers, xoroai, rowai, colai);
 
     assign err = write_error | input_error;
 
@@ -40,7 +45,9 @@ endmodule
 module inputController(input logic ph1, ph2,
                         input logic reset,
                         input logic [1:0] xoro, row, col, win,
-                        input logic ai_en, write_error,
+                        input logic ai_en, write_error, 
+                        input logic [1:0] xoroai, rowai, colai, 
+                        output logic [1:0] xorowrite, rowwrite, colwrite, 
                         output logic error);
     // define states for X, O, and AI turns
     // typedef enum logic [1:0] {X, O, AI} statetype;
@@ -89,6 +96,21 @@ module inputController(input logic ph1, ph2,
             default:    nextstate <= X;
         endcase
 
+    // write source selection
+    always_comb
+        begin
+            if (state == AI) begin
+                xorowrite = xoroai;
+                rowwrite = rowai;
+                colwrite = colai;
+            end
+            else begin
+                xorowrite = xoro;
+                rowwrite = row;
+                colwrite = col;
+            end
+        end
+
 endmodule
 
 // The output controller contantly cycles through the cells and sends them to
@@ -113,6 +135,8 @@ module outputController (
     parameter S7 = 4'b0111;
     parameter S8 = 4'b1000;
     logic [3:0] state, nextstate;
+
+    logic [1:0] xo, r, c;
 
     // FSM to rotate through cells
     flopenr #4 statereg(ph1, ph2, reset, 1'b1, nextstate, state);
@@ -139,56 +163,63 @@ module outputController (
     always_comb
         case (state)
             S0: begin // row 0 col 0
-                    assign row = 2'b00;
-                    assign col = 2'b00;
-                    assign xoro = registers[1:0];
+                    assign r = 2'b00;
+                    assign c = 2'b00;
+                    assign xo = registers[1:0];
                 end
-            S1: begin // row 0 col 1
-                    assign row = 2'b00;
-                    assign col = 2'b01;
-                    assign xoro = registers[3:2];
+            S1: begin // r 0 c 1
+                    assign r = 2'b00;
+                    assign c = 2'b01;
+                    assign xo = registers[3:2];
                 end
-            S2: begin // row 0 col 2
-                    assign row = 2'b00;
-                    assign col = 2'b10;
-                    assign xoro = registers[5:4];
+            S2: begin // r 0 c 2
+                    assign r = 2'b00;
+                    assign c = 2'b10;
+                    assign xo = registers[5:4];
                 end
-            S3: begin // row 1 col 0
-                    assign row = 2'b01;
-                    assign col = 2'b00;
-                    assign xoro = registers[7:6];
+            S3: begin // r 1 c 0
+                    assign r = 2'b01;
+                    assign c = 2'b00;
+                    assign xo = registers[7:6];
                 end
-            S4: begin // row 1 col 1
-                    assign row = 2'b01;
-                    assign col = 2'b01;
-                    assign xoro = registers[9:8];
+            S4: begin // r 1 c 1
+                    assign r = 2'b01;
+                    assign c = 2'b01;
+                    assign xo = registers[9:8];
                 end
-            S5: begin // row 1 col 2
-                    assign row = 2'b01;
-                    assign col = 2'b10;
-                    assign xoro = registers[11:10];
+            S5: begin // r 1 c 2
+                    assign r = 2'b01;
+                    assign c = 2'b10;
+                    assign xo = registers[11:10];
                 end
-            S6: begin // row 2 col 0
-                    assign row = 2'b10;
-                    assign col = 2'b00;
-                    assign xoro = registers[13:12];
+            S6: begin // r 2 c 0
+                    assign r = 2'b10;
+                    assign c = 2'b00;
+                    assign xo = registers[13:12];
                 end
-            S7: begin // row 2 col 1
-                    assign row = 2'b10;
-                    assign col = 2'b01;
-                    assign xoro = registers[15:14];
+            S7: begin // r 2 c 1
+                    assign r = 2'b10;
+                    assign c = 2'b01;
+                    assign xo = registers[15:14];
                 end
-            S8: begin // row 2 col 2
-                    assign row = 2'b10;
-                    assign col = 2'b10;
-                    assign xoro = registers[17:16];
+            S8: begin // r 2 c 2
+                    assign r = 2'b10;
+                    assign c = 2'b10;
+                    assign xo = registers[17:16];
                 end
             default: begin
-                    assign row = 2'b00;
-                    assign col = 2'b00;
-                    assign xoro = registers[1:0];
+                    assign r = 2'b00;
+                    assign c = 2'b00;
+                    assign xo = registers[1:0];
             end
         endcase
+
+    assign xoro[1] = xo[1] & ~reset;
+    assign xoro[0] = xo[0] & ~reset;
+    assign row[1] = r[1] & ~reset;
+    assign row[0] = r[0] & ~reset;
+    assign col[1] = c[1] & ~reset;
+    assign col[0] = c[0] & ~reset;
 endmodule
 
 // registers with set & error logic
@@ -239,7 +270,7 @@ module board (
     assign regset[17:16] = (addr22 & ~input_error & ~write_error) ? xoro : registers[17:16];
      
     // synchronous reset of registers, or with regset signal for board control
-    flopenr #18 boardmem(ph1, ph2, reset, 1'b1, regset, registers);
+    flopenr #18 boardmem(ph1, ph2, reset, 1'b1, regset | registers, registers);
     // always @(posedge clk, posedge reset)
     //     if (reset) registers <= 17'b0;
     //     else registers <= registers | regset;
@@ -248,6 +279,7 @@ endmodule
 // sets win output to x or o based if one has won
 // assumes only one player will win, otherwise could output either
 module winChecker(
+    input logic reset,
     input logic [17:0] registers, 
     output logic [1:0] winstate
 );
@@ -256,26 +288,26 @@ module winChecker(
     
     // vertical wins
     assign vertical = ((((registers[1:0] == registers[7:6]) & 
-                         (registers[7:6] == registers[13:12])) & registers[1:0]) |
+                         (registers[7:6] == registers[13:12])) ? registers[1:0] : 2'b00) |
                        (((registers[3:2] == registers[9:8]) & 
-                         (registers[9:8] == registers[15:14])) & registers[3:2]) |
+                         (registers[9:8] == registers[15:14])) ? registers[3:2] : 2'b00) |
                        (((registers[5:4] == registers[11:10]) & 
-                         (registers[11:10] == registers[17:16])) & registers[5:4]));
+                         (registers[11:10] == registers[17:16])) ? registers[5:4] : 2'b00));
 
     // horizontal wins
     assign horizontal = 
                       ((((registers[1:0] == registers[3:2]) & 
-                         (registers[3:2] == registers[5:4])) & registers[1:0]) |
+                         (registers[3:2] == registers[5:4])) ? registers[1:0] : 2'b00) |
                        (((registers[7:6] == registers[9:8]) & 
-                         (registers[9:8] == registers[11:10])) & registers[7:6]) |
+                         (registers[9:8] == registers[11:10])) ? registers[7:6] : 2'b00) |
                        (((registers[13:12] == registers[15:14]) & 
-                         (registers[15:14] == registers[17:16])) & registers[13:12]));
+                         (registers[15:14] == registers[17:16])) ? registers[13:12] : 2'b00));
 
     // diagonal wins
     assign diagonal = ((((registers[1:0] == registers[9:8]) & 
-                         (registers[9:8] == registers[17:16])) & registers[1:0]) |
+                         (registers[9:8] == registers[17:16])) ? registers[1:0] : 2'b00) |
                        (((registers[5:4] == registers[9:8]) & 
-                         (registers[9:8] == registers[13:12])) & registers[5:4]));
+                         (registers[9:8] == registers[13:12])) ? registers[5:4] : 2'b00));
 
     // or them together to get win condition
     assign win = vertical | horizontal | diagonal;
@@ -292,9 +324,69 @@ module winChecker(
             else tie = 2'b00;
         end
 
-    assign winstate = tie | win;
+    assign winstate =  reset ? 2'b00 : (tie | win);
 endmodule
 
+// The ai module outputs a suggested move based on the current state of the board
+module ai ( input logic [17:0] registers, 
+            output logic [1:0] xoro, row, col);
+
+    assign xoro = 2'b10; // always move for x
+    logic [3:0] cellnum;
+
+    logic [8:0] notoccupied;
+    assign notoccupied = {
+        (registers[17] | registers[16]), (registers[15] | registers[14]), 
+        (registers[13] | registers[12]), (registers[11] | registers[10]), 
+        (registers[9] | registers[8]), (registers[7] | registers[6]), 
+        (registers[5] | registers[4]), (registers[3] | registers[2]), 
+        (registers[1] | registers[0]) 
+    };
+
+    always_comb
+        begin
+            if (registers[10]) // o in cell 6, single case
+                casez (notoccupied)
+                    9'bxxxxxxxx0: begin row <= 2'b00; col <= 2'b00; end
+                    9'bxx0xxxxx1: begin row <= 2'b10; col <= 2'b00; end
+                    9'bxx1x0xxx1: begin row <= 2'b01; col <= 2'b01; end
+                    9'bxx1x1x0x1: begin row <= 2'b00; col <= 2'b10; end
+                    9'b0x1x1x1x1: begin row <= 2'b10; col <= 2'b10; end
+                    9'b1x1x1x101: begin row <= 2'b00; col <= 2'b01; end
+                    9'b1x1x10111: begin row <= 2'b01; col <= 2'b00; end
+                    9'b101x11111: begin row <= 2'b10; col <= 2'b01; end
+                    9'b111011111: begin row <= 2'b01; col <= 2'b10; end
+                    default: begin row <= 2'b00; col <= 2'b00; end
+                endcase
+            else if (registers[6] | (registers[12] & ~registers[13])) // two part case
+                casez (notoccupied)
+                    9'bxxxxxxxx0: begin row <= 2'b00; col <= 2'b00; end
+                    9'bxxxxxx0x1: begin row <= 2'b00; col <= 2'b10; end
+                    9'bxxx0xx1x1: begin row <= 2'b01; col <= 2'b10; end
+                    9'bx0x1xx1x1: begin row <= 2'b10; col <= 2'b01; end
+                    9'bx1x10x1x1: begin row <= 2'b01; col <= 2'b01; end
+                    9'bx1x1101x1: begin row <= 2'b01; col <= 2'b00; end
+                    9'bx101111x1: begin row <= 2'b10; col <= 2'b00; end
+                    9'bx11111101: begin row <= 2'b00; col <= 2'b01; end
+                    9'b011111111: begin row <= 2'b10; col <= 2'b10; end
+                    default: begin row <= 2'b00; col <= 2'b00; end
+                endcase
+            else
+                casez (notoccupied)
+                    9'bxxxxxxxx0: begin row <= 2'b00; col <= 2'b00; end
+                    9'bxx0xxxxx1: begin row <= 2'b10; col <= 2'b00; end
+                    9'bxx10xxxx1: begin row <= 2'b01; col <= 2'b10; end
+                    9'bxx110xxx1: begin row <= 2'b01; col <= 2'b01; end
+                    9'bxx111xx01: begin row <= 2'b00; col <= 2'b01; end
+                    9'bx0111xx11: begin row <= 2'b10; col <= 2'b01; end
+                    9'bx1111x011: begin row <= 2'b00; col <= 2'b10; end
+                    9'b01111x111: begin row <= 2'b10; col <= 2'b10; end
+                    9'b111110111: begin row <= 2'b01; col <= 2'b00; end
+                    default: begin row <= 2'b00; col <= 2'b00; end
+                endcase
+        end
+
+endmodule
 
 // Modules provided by Prof Harris
 module flop #(parameter WIDTH = 8)
