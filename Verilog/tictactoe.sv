@@ -9,33 +9,54 @@
 // top level module containing the entire logic of the chip
  module tictactoe(input logic ph1, ph2,
                   input logic reset,
-                  input logic [1:0] xoroin, rowin, colin,
+                  input logic [1:0] xoro_in, row_in, col_in,
                   input logic ai_en,
                   output logic err,
-                  output logic [1:0] xoroout, rowout, colout, win);
+                  output logic [1:0] xoro_out, row_out, col_out, win);
 
-    logic write_error, input_error;
+    // 2 registers per board space, one for X high, one for O high
     logic [17:0] registers;
-    logic [1:0] xoroai, rowai, colai;
-    logic [1:0] xoro, row, col;
+
+    // the AI's next move based on the current board state
+    // calculate regardless of whether the AI is making a move or not
+    logic [1:0] xoro_ai, row_ai, col_ai;
+
+    // the values to write to the registers
+    // if ai_en and X's turn, equal to *_ai
+    // else equal to *_in
+    logic [1:0] xoro_write, row_write, col_write;
+
+    // error if the input is invalid
+    //  * ai_en high when not X's turn
+    //  * move out of turn
+    //  * invalid row, col, or player (11)
+    logic input_error;
+
+    // error if trying to write to a space that already has an X or O
+    logic write_error;
+
 
     // input controller
-    inputController incon (ph1, ph2, reset, xoroin, rowin, colin, win, ai_en, 
-                            write_error, 
-                            xoroai, rowai, colai, xoro, row, col,
+    inputController incon (ph1, ph2, reset,
+                            xoro_in, row_in, col_in, win, ai_en, 
+                            write_error,
+                            xoro_ai, row_ai, col_ai,
+                            xoro_write, row_write, col_write,
                             input_error);
 
     // board state registers
-    board b (ph1, ph2, reset, input_error, xoro, row, col, registers, write_error);
+    board b (ph1, ph2, reset, input_error,
+              xoro_write, row_write, col_write,
+              registers, write_error);
 
     // output controller
-    outputController outcon (ph1, ph2, reset, registers, xoroout, rowout, colout);
+    outputController outcon (ph1, ph2, reset, registers, xoro_out, row_out, col_out);
 
     // win checker
     winChecker wc (reset, registers, win);
 
     // AI logic
-    ai genius (registers, xoroai, rowai, colai);
+    ai genius (registers, xoro_ai, row_ai, col_ai);
 
     assign err = write_error | input_error;
 
