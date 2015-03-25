@@ -49,16 +49,15 @@ module inputController(input logic ph1, ph2,
     parameter X = 2'b10;
     parameter O = 2'b01;
     parameter AI = 2'b00;
-    logic [1:0] state, nextstate;
+    logic [1:0] state, nextstate, resetval;
 
     // internal signals
     logic gameover_err, parse_err, turn_err, full_err, write;
-    logic resetval;
 
     assign resetval = ai_en ? AI : X;
 
     // turn tracking FSM state register
-    flopenrval #2 statereg(ph1, ph2, reset, 1'b1, resetval, next_state, state);
+    flopenrval #2 statereg(ph1, ph2, reset, 1'b1, resetval, nextstate, state);
     // always_ff @(posedge clk, posedge reset)
     //     if (reset) state <= ai_en ? AI : X;
     //     else       state <= nextstate;
@@ -84,8 +83,8 @@ module inputController(input logic ph1, ph2,
     // next state logic
     always_comb
         case (state)
-            X:          nextstate <= (write & ~full_err) ? O : state;
-            O:          nextstate <= (write & ~full_err) ? (ai_en ? AI : X) : state;
+            X:          nextstate <= (write & ~full_err) ? O : X;
+            O:          nextstate <= (write & ~full_err) ? (ai_en ? AI : X) : O;
             AI:         nextstate <= O;
             default:    nextstate <= X;
         endcase
