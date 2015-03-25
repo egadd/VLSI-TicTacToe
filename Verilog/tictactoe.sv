@@ -360,28 +360,28 @@ module ai ( input logic [17:0] registers,
                 endcase
             else if (registers[6] | (registers[12] & ~registers[13])) // two part case
                 casez (notoccupied)
-                    9'bxxxxxxxx0: begin row <= 2'b00; col <= 2'b00; end
-                    9'bxxxxxx0x1: begin row <= 2'b00; col <= 2'b10; end
-                    9'bxxx0xx1x1: begin row <= 2'b01; col <= 2'b10; end
-                    9'bx0x1xx1x1: begin row <= 2'b10; col <= 2'b01; end
-                    9'bx1x10x1x1: begin row <= 2'b01; col <= 2'b01; end
-                    9'bx1x1101x1: begin row <= 2'b01; col <= 2'b00; end
-                    9'bx101111x1: begin row <= 2'b10; col <= 2'b00; end
-                    9'bx11111101: begin row <= 2'b00; col <= 2'b01; end
-                    9'b011111111: begin row <= 2'b10; col <= 2'b10; end
+                    9'bxxxxxxxx1: begin row <= 2'b00; col <= 2'b00; end
+                    9'bxxxxxx1x0: begin row <= 2'b00; col <= 2'b10; end
+                    9'bxxx1xx0x0: begin row <= 2'b01; col <= 2'b10; end
+                    9'bx1x0xx0x0: begin row <= 2'b10; col <= 2'b01; end
+                    9'bx0x01x0x0: begin row <= 2'b01; col <= 2'b01; end
+                    9'bx0x0010x0: begin row <= 2'b01; col <= 2'b00; end
+                    9'bx010000x0: begin row <= 2'b10; col <= 2'b00; end
+                    9'bx00000010: begin row <= 2'b00; col <= 2'b01; end
+                    9'b100000000: begin row <= 2'b10; col <= 2'b10; end
                     default: begin row <= 2'b00; col <= 2'b00; end
                 endcase
             else
                 casez (notoccupied)
-                    9'bxxxxxxxx0: begin row <= 2'b00; col <= 2'b00; end
-                    9'bxx0xxxxx1: begin row <= 2'b10; col <= 2'b00; end
-                    9'bxx10xxxx1: begin row <= 2'b01; col <= 2'b10; end
-                    9'bxx110xxx1: begin row <= 2'b01; col <= 2'b01; end
-                    9'bxx111xx01: begin row <= 2'b00; col <= 2'b01; end
-                    9'bx0111xx11: begin row <= 2'b10; col <= 2'b01; end
-                    9'bx1111x011: begin row <= 2'b00; col <= 2'b10; end
-                    9'b01111x111: begin row <= 2'b10; col <= 2'b10; end
-                    9'b111110111: begin row <= 2'b01; col <= 2'b00; end
+                    9'bxxxxxxxx1: begin row <= 2'b00; col <= 2'b00; end
+                    9'bxx1xxxxx0: begin row <= 2'b10; col <= 2'b00; end
+                    9'bxx01xxxx0: begin row <= 2'b01; col <= 2'b10; end
+                    9'bxx001xxx0: begin row <= 2'b01; col <= 2'b01; end
+                    9'bxx000xx10: begin row <= 2'b00; col <= 2'b01; end
+                    9'bx1000xx00: begin row <= 2'b10; col <= 2'b01; end
+                    9'bx0000x100: begin row <= 2'b00; col <= 2'b10; end
+                    9'b10000x000: begin row <= 2'b10; col <= 2'b10; end
+                    9'b000001000: begin row <= 2'b01; col <= 2'b00; end
                     default: begin row <= 2'b00; col <= 2'b00; end
                 endcase
         end
