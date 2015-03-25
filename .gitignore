@@ -4,6 +4,7 @@
 # Temporary out files
 *.out
 
+# Java class files
 *.class
 
 # Mobile Tools for Java (J2ME)
