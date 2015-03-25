@@ -143,8 +143,6 @@ module outputController (
     output logic [1:0] xoro, row, col
 );
 
-    // typedef enum logic [3:0] {S0,S1,S2,S3,S4,S5,S6,S7,S8} statetype;
-    // statetype [3:0] state, nextstate;
     // List states
     parameter S0 = 4'b0000;
     parameter S1 = 4'b0001;
@@ -157,13 +155,13 @@ module outputController (
     parameter S8 = 4'b1000;
     logic [3:0] state, nextstate;
 
+    // Need internal xoro, row, and col signals so that the outputs
+    // can be pulled low immediately upon reset, rather than waiting for the 
+    // board registers to updated on the next clock cycle.
     logic [1:0] xo, r, c;
 
-    // FSM to rotate through cells
+    // Register to hold the state for the FSM
     flopenr #4 statereg(ph1, ph2, reset, 1'b1, nextstate, state);
-    // always_ff @(posedge clk, posedge reset)
-    //     if (reset) state <= S0;
-    //     else       state <= nextstate;
 
     // next state logic
     always_comb
@@ -235,6 +233,8 @@ module outputController (
             end
         endcase
 
+    // Make sure every output signal goes low immediately upon reset.
+    // No waiting for board registers to update.
     assign xoro[1] = xo[1] & ~reset;
     assign xoro[0] = xo[0] & ~reset;
     assign row[1] = r[1] & ~reset;
