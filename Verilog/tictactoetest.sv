@@ -5,16 +5,16 @@ module tictactoetest();
   // Signals from test vectors
   logic reset, ai_en, errEx;
   logic err;
-  logic [1:0] xoroin, rowin, colin, xoroEx, rowEx, colEx, winEx;
-  logic [1:0] xoroout, rowout, colout, win;
+  logic [1:0] xoro_in, row_in, col_in, xoroEx, rowEx, colEx, winEx;
+  logic [1:0] xoro_out, row_out, col_out, win;
 
   // testbench signals
   logic [31:0] vectornum, errors;
   logic [16:0] testvectors[1000:0];
 
   // instantiate Device Under Test (DUT)
-  tictactoe dut(.ph1, .ph2, .reset, .xoroin, .rowin, .colin, .ai_en,
-                .err, .xoroout, .rowout, .colout, .win);
+  tictactoe dut(.ph1, .ph2, .reset, .xoro_in, .row_in, .col_in, .ai_en,
+                .err, .xoro_out, .row_out, .col_out, .win);
 
   // generate two-phase clock
   always begin
@@ -27,7 +27,7 @@ module tictactoetest();
   // load vectors at start
   initial begin
     $dumpfile("tictactoe.vcd"); // where to dump the results
-    $dumpvars(1, ph1, ph2, reset, rowin, colin, xoroin, rowout, colout, xoroout);
+    $dumpvars(1, ph1, ph2, reset, row_in, col_in, xoro_in, row_out, col_out, xoro_out);
     $readmemb("tictactoe.tv", testvectors); // load test vectors
     vectornum = 0; errors = 0;
     // reset = 1; #17; reset = 0; // come out of reset before cycle 2
@@ -36,7 +36,7 @@ module tictactoetest();
   // apply test vectors on rising edge of clk
   always @(posedge ph1) begin
     #1; 
-    {reset, xoroin, rowin, colin, ai_en, errEx, xoroEx, rowEx, colEx, winEx} = 
+    {reset, xoro_in, row_in, col_in, ai_en, errEx, xoroEx, rowEx, colEx, winEx} = 
                                                      testvectors[vectornum];
     // Display the vector and its number for debugging purposes
     // $display("Test #, Vector: %d, %b", vectornum, testvectors[vectornum]);
@@ -45,9 +45,9 @@ module tictactoetest();
   // check results on falling edge of clk
   always @(negedge ph2)
     begin
-      if (xoroout !== xoroEx) begin // registers hold correct values
+      if (xoro_out !== xoroEx) begin // registers hold correct values
         $display("Error: row = %h, col = %h, xoro = %h (expected %h)",
-	        rowout, colout, xoroout, xoroEx);
+	        row_out, col_out, xoro_out, xoroEx);
 	errors = errors + 1;
       end
       
@@ -56,21 +56,21 @@ module tictactoetest();
 	errors = errors + 1;
       end
       
-      if (rowout !== rowEx) begin // output state machine 
+      if (row_out !== rowEx) begin // output state machine 
         $display("Error: row = %h (expected %h), col = %h", 
-            rowout, rowEx, colout);
+            row_out, rowEx, col_out);
 	errors = errors + 1;
       end
 
-      if (colout !== colEx) begin // output state machine
+      if (col_out !== colEx) begin // output state machine
         $display("Error: row = %h, col = %h (expected %h)",
-            rowout, colout, colEx);
+            row_out, col_out, colEx);
 	errors = errors + 1;
       end
 
       if (err !== errEx) begin // error detection - turn, ai, invalid input, invalid write
         $display("Error: row = %h col = %h xoro = %h, err = %h (expected %h)", 
-            rowin, colin, xoroin, err, errEx);
+            row_in, col_in, xoro_in, err, errEx);
   errors = errors + 1;
       end
 
