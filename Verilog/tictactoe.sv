@@ -43,7 +43,7 @@
                             write_error,
                             xoro_ai, row_ai, col_ai,
                             xoro_write, row_write, col_write,
-                            input_error);
+                            input_error, err);
 
     // board state registers
     board b (ph1, ph2, reset, input_error,
@@ -59,7 +59,6 @@
     // AI logic
     ai genius (registers, xoro_ai, row_ai, col_ai);
 
-    assign err = write_error | input_error;
 
 endmodule
 
@@ -70,13 +69,13 @@ module inputController(input logic ph1, ph2,        // two phase clock
                         input logic ai_en, write_err, 
                         input logic [1:0] xoro_ai, row_ai, col_ai, 
                         output logic [1:0] xoro_write, row_write, col_write, 
-                        output logic input_err);
+                        output logic input_err, err);
     // Define turn states
-    parameter X = 2'b10;
-    parameter O = 2'b01;
+    parameter TURN_X = 1'b0;
+    parameter TURN_O = 1'b1;
 
     // store the current turn, the next turn
-    logic [1:0] state, nextstate;
+    logic state, nextstate;
 
     logic gameover_err;        // writing when the game is over
     logic parse_err;           // invalid xoro, row, col input (11)
@@ -86,50 +85,54 @@ module inputController(input logic ph1, ph2,        // two phase clock
     logic write;               // high if attempting to make a manual move
 
     // turn tracking FSM state register
-    flopenrval #2 statereg(ph1, ph2, reset, 1'b1, X, nextstate, state);
+    flopenr #1 statereg(ph1, ph2, reset, write_enable, nextstate, state);
 
     // error checking logic
-    always_comb
-        begin
-            // some errors only happen if we are trying to write
-            assign write = xoro_in[1] | xoro_in[0]; 
+    // some errors only happen if we are trying to write
+    assign write = xoro_in[1] | xoro_in[0]; 
 
-            // Check inputs for validity, correct turn, and not a completed game
-            assign gameover_err = (win[1] | win[0]) & write;
-            assign parse_err = (row_in[1] & row_in[0]) | (col_in[1] & col_in[0]) | 
-                                (xoro_in[1] & xoro_in[0]);
-            assign turn_err = ((state == X) & xoro_in[0]) | ((state == O) & xoro_in[1]);
-            assign ai_err = (state == O) & ai_en;
-            
-            // input_error goes high when any of these errors are present
-            assign input_err = gameover_err | parse_err | turn_err | ai_err;
-            
-            // if there are any errors including write, must block writes
-            assign full_err = input_err | write_err;
-        end
+    // Check inputs for validity, correct turn, and not a completed game
+    assign gameover_err = (win[1] | win[0]) & write;
+    assign parse_err = (row_in[1] & row_in[0]) | (col_in[1] & col_in[0]) | 
+                        (xoro_in[1] & xoro_in[0]);
+    assign TURN_err = ((state == TURN_X) & xoro_in[0]) | ((state == TURN_O) & xoro_in[1]);
+    assign ai_err = (state == TURN_O) & ai_en;
+    
+    // input_error goes high when any of these errors are present
+    assign input_err = gameover_err | parse_err | TURN_err | ai_err;
+    
+    // if there are any errors including write, must block writes
+    assign err = input_err | write_err;
+
+    // only enable the register if no error & write to save power
+    assign write_enable = write & ~err;
 
     // next state logic
     always_comb
         case (state)
-            X:          nextstate <= ((write | ai_en) & ~full_err) ? O : X;
-            O:          nextstate <= (write & ~full_err) ? X : O;
-            default:    nextstate <= X;
+            TURN_X:          nextstate <= ((write | ai_en) & ~err) ? TURN_O : TURN_X;
+            TURN_O:          nextstate <= (write & ~err) ? TURN_X : TURN_O;
+            default:    nextstate <= TURN_X;
         endcase
 
     // write source selection
-    always_comb
-        begin
-            if (ai_en & (state == X)) begin
-                xoro_write = xoro_ai;
-                row_write = row_ai;
-                col_write = col_ai;
-            end
-            else begin
-                xoro_write = xoro_in;
-                row_write = row_in;
-                col_write = col_in;
-            end
-        end
+    assign xoro_write = (ai_en & (state == TURN_X)) ? xoro_ai : xoro_in;
+    assign row_write = (ai_en & (state == TURN_X)) ? row_ai : row_in;
+    assign col_write = (ai_en & (state == TURN_X)) ? col_ai : col_in;
+
+    // always_comb
+    //     begin
+    //         if (ai_en & (state == X)) begin
+    //             xoro_write = xoro_ai;
+    //             row_write = row_ai;
+    //             col_write = col_ai;
+    //         end
+    //         else begin
+    //             xoro_write = xoro_in;
+    //             row_write = row_in;
+    //             col_write = col_in;
+    //         end
+    //     end
 
 endmodule
 
@@ -154,11 +157,6 @@ module outputController (
     parameter S8 = 4'b1000;
     logic [3:0] state, nextstate;
 
-    // Need internal xoro, row, and col signals so that the outputs
-    // can be pulled low immediately upon reset, rather than waiting for the 
-    // board registers to updated on the next clock cycle.
-    logic [1:0] xo, r, c;
-
     // Register to hold the state for the FSM
     flopenr #4 statereg(ph1, ph2, reset, 1'b1, nextstate, state);
 
@@ -181,65 +179,65 @@ module outputController (
     always_comb
         case (state)
             S0: begin // row 0 col 0
-                    assign r = 2'b00;
-                    assign c = 2'b00;
-                    assign xo = registers[1:0];
+                    assign row = 2'b00;
+                    assign col = 2'b00;
+                    assign xoro = registers[1:0];
                 end
             S1: begin // r 0 c 1
-                    assign r = 2'b00;
-                    assign c = 2'b01;
-                    assign xo = registers[3:2];
+                    assign row = 2'b00;
+                    assign col = 2'b01;
+                    assign xoro = registers[3:2];
                 end
             S2: begin // r 0 c 2
-                    assign r = 2'b00;
-                    assign c = 2'b10;
-                    assign xo = registers[5:4];
+                    assign row = 2'b00;
+                    assign col = 2'b10;
+                    assign xoro = registers[5:4];
                 end
             S3: begin // r 1 c 0
-                    assign r = 2'b01;
-                    assign c = 2'b00;
-                    assign xo = registers[7:6];
+                    assign row = 2'b01;
+                    assign col = 2'b00;
+                    assign xoro = registers[7:6];
                 end
             S4: begin // r 1 c 1
-                    assign r = 2'b01;
-                    assign c = 2'b01;
-                    assign xo = registers[9:8];
+                    assign row = 2'b01;
+                    assign col = 2'b01;
+                    assign xoro = registers[9:8];
                 end
             S5: begin // r 1 c 2
-                    assign r = 2'b01;
-                    assign c = 2'b10;
-                    assign xo = registers[11:10];
+                    assign row = 2'b01;
+                    assign col = 2'b10;
+                    assign xoro = registers[11:10];
                 end
             S6: begin // r 2 c 0
-                    assign r = 2'b10;
-                    assign c = 2'b00;
-                    assign xo = registers[13:12];
+                    assign row = 2'b10;
+                    assign col = 2'b00;
+                    assign xoro = registers[13:12];
                 end
             S7: begin // r 2 c 1
-                    assign r = 2'b10;
-                    assign c = 2'b01;
-                    assign xo = registers[15:14];
+                    assign row = 2'b10;
+                    assign col = 2'b01;
+                    assign xoro = registers[15:14];
                 end
             S8: begin // r 2 c 2
-                    assign r = 2'b10;
-                    assign c = 2'b10;
-                    assign xo = registers[17:16];
+                    assign row = 2'b10;
+                    assign col = 2'b10;
+                    assign xoro = registers[17:16];
                 end
             default: begin
-                    assign r = 2'b00;
-                    assign c = 2'b00;
-                    assign xo = registers[1:0];
+                    assign row = 2'b00;
+                    assign col = 2'b00;
+                    assign xoro = registers[1:0];
             end
         endcase
 
     // Make sure every output signal goes low immediately upon reset.
     // No waiting for board registers to update.
-    assign xoro[1] = xo[1] & ~reset;
-    assign xoro[0] = xo[0] & ~reset;
-    assign row[1] = r[1] & ~reset;
-    assign row[0] = r[0] & ~reset;
-    assign col[1] = c[1] & ~reset;
-    assign col[0] = c[0] & ~reset;
+    // assign xoro[1] = xo[1] & ~reset;
+    // assign xoro[0] = xo[0] & ~reset;
+    // assign row[1] = r[1] & ~reset;
+    // assign row[0] = r[0] & ~reset;
+    // assign col[1] = c[1] & ~reset;
+    // assign col[0] = c[0] & ~reset;
 endmodule
 
 // registers with set & error logic
@@ -251,8 +249,9 @@ module board (
     output logic write_error
 );
 
-    logic [17:0] regset; 
+    // logic [17:0] regset; 
     logic addr00, addr01, addr02, addr10, addr11, addr12, addr20, addr21, addr22;
+    logic en00, en01, en02, en10, en11, en12, en20, en21, en22;
 
     // calculate address enable bits for each pair of registers
     assign addr00 = (row == 2'b00) & (col == 2'b00);
@@ -279,18 +278,40 @@ module board (
 
     // only assign to a register if no errors and it is the addressed pair and it is
     // the appropriate register for x or o
-    assign regset[1:0] = (addr00 & ~input_error & ~write_error) ? xoro : registers[1:0];
-    assign regset[3:2] = (addr01 & ~input_error & ~write_error) ? xoro : registers[3:2];
-    assign regset[5:4] = (addr02 & ~input_error & ~write_error) ? xoro : registers[5:4];
-    assign regset[7:6] = (addr10 & ~input_error & ~write_error) ? xoro : registers[7:6];
-    assign regset[9:8] = (addr11 & ~input_error & ~write_error) ? xoro : registers[9:8];
-    assign regset[11:10] = (addr12 & ~input_error & ~write_error) ? xoro : registers[11:10];
-    assign regset[13:12] = (addr20 & ~input_error & ~write_error) ? xoro : registers[13:12];
-    assign regset[15:14] = (addr21 & ~input_error & ~write_error) ? xoro : registers[15:14];
-    assign regset[17:16] = (addr22 & ~input_error & ~write_error) ? xoro : registers[17:16];
+    // assign regset[1:0] = (addr00 & ~input_error & ~write_error) ? xoro : registers[1:0];
+    // assign regset[3:2] = (addr01 & ~input_error & ~write_error) ? xoro : registers[3:2];
+    // assign regset[5:4] = (addr02 & ~input_error & ~write_error) ? xoro : registers[5:4];
+    // assign regset[7:6] = (addr10 & ~input_error & ~write_error) ? xoro : registers[7:6];
+    // assign regset[9:8] = (addr11 & ~input_error & ~write_error) ? xoro : registers[9:8];
+    // assign regset[11:10] = (addr12 & ~input_error & ~write_error) ? xoro : registers[11:10];
+    // assign regset[13:12] = (addr20 & ~input_error & ~write_error) ? xoro : registers[13:12];
+    // assign regset[15:14] = (addr21 & ~input_error & ~write_error) ? xoro : registers[15:14];
+    // assign regset[17:16] = (addr22 & ~input_error & ~write_error) ? xoro : registers[17:16];
+
+    assign en00 = addr00 & ~input_error & ~write_error;
+    assign en01 = addr01 & ~input_error & ~write_error;
+    assign en02 = addr02 & ~input_error & ~write_error;
+    assign en10 = addr10 & ~input_error & ~write_error;
+    assign en11 = addr11 & ~input_error & ~write_error;
+    assign en12 = addr12 & ~input_error & ~write_error;
+    assign en20 = addr20 & ~input_error & ~write_error;
+    assign en21 = addr21 & ~input_error & ~write_error;
+    assign en22 = addr22 & ~input_error & ~write_error;
      
     // synchronous reset of registers, or with regset signal for board control
-    flopenr #18 boardmem(ph1, ph2, reset, 1'b1, regset | registers, registers);
+    // flopenr #18 boardmem(ph1, ph2, reset, 1'b1, regset, registers);
+
+    // Registers only enabled when a write is valid, then they take on the xoro 
+    // signal that is being written.
+    flopenr #2 boardmem(ph1, ph2, reset, en00, xoro, registers[1:0]);
+    flopenr #2 boardmem(ph1, ph2, reset, en01, xoro, registers[3:2]);
+    flopenr #2 boardmem(ph1, ph2, reset, en01, xoro, registers[5:4]);
+    flopenr #2 boardmem(ph1, ph2, reset, en10, xoro, registers[7:6]);
+    flopenr #2 boardmem(ph1, ph2, reset, en11, xoro, registers[9:8]);
+    flopenr #2 boardmem(ph1, ph2, reset, en12, xoro, registers[11:10]);
+    flopenr #2 boardmem(ph1, ph2, reset, en20, xoro, registers[13:12]);
+    flopenr #2 boardmem(ph1, ph2, reset, en21, xoro, registers[15:14]);
+    flopenr #2 boardmem(ph1, ph2, reset, en22, xoro, registers[17:16]);
 
 endmodule
 
@@ -348,7 +369,7 @@ module winChecker(
 
     // We want to pull the win state low on reset without waiting for the board
     // registers to update on the next clock cycle.
-    assign winstate =  reset ? 2'b00 : (tie | win);
+    assign winstate = tie | win;
 endmodule
 
 // The ai module outputs a suggested move based on the current state of the board
