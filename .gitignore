@@ -43,3 +43,6 @@ synth/change_names
 synth/default.svf
 synth/*.pow
 synth/*.rep
+synth/*.mr
+synth/*.pvl
+synth/*.syn

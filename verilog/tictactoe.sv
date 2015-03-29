@@ -19,7 +19,7 @@
 
     // the AI's next move based on the current board state
     // calculate regardless of whether the AI is making a move or not
-    logic [1:0] xoro_ai, row_ai, col_ai;
+    logic [1:0] row_ai, col_ai;
 
     // the values to write to the registers
     // if ai_en and X's turn, equal to *_ai
@@ -41,7 +41,7 @@
     inputController incon (ph1, ph2, reset,
                             xoro_in, row_in, col_in, win, ai_en, 
                             write_error,
-                            xoro_ai, row_ai, col_ai,
+                            row_ai, col_ai,
                             xoro_write, row_write, col_write,
                             input_error, err);
 
@@ -67,7 +67,7 @@ module inputController(input logic ph1, ph2,        // two phase clock
                         input logic reset,
                         input logic [1:0] xoro_in, row_in, col_in, win,
                         input logic ai_en, write_err, 
-                        input logic [1:0] xoro_ai, row_ai, col_ai, 
+                        input logic [1:0] row_ai, col_ai, 
                         output logic [1:0] xoro_write, row_write, col_write, 
                         output logic input_err, err);
     // Define turn states
@@ -343,9 +343,8 @@ endmodule
 // The ai module outputs a suggested move based on the current state of the board
 // The ai's first move is always to the top left corner
 module ai ( input logic [17:0] registers, 
-            output logic [1:0] xoro, row, col);
+            output logic [1:0] row, col);
 
-    assign xoro = 2'b10; // always move for x
     logic [3:0] cellnum;
 
     logic [8:0] notoccupied;
