@@ -121,20 +121,6 @@ module inputController(input logic ph1, ph2,        // two phase clock
     assign row_write = (ai_en & (state == TURN_X)) ? row_ai : row_in;
     assign col_write = (ai_en & (state == TURN_X)) ? col_ai : col_in;
 
-    // always_comb
-    //     begin
-    //         if (ai_en & (state == X)) begin
-    //             xoro_write = xoro_ai;
-    //             row_write = row_ai;
-    //             col_write = col_ai;
-    //         end
-    //         else begin
-    //             xoro_write = xoro_in;
-    //             row_write = row_in;
-    //             col_write = col_in;
-    //         end
-    //     end
-
 endmodule
 
 // The output controller contantly cycles through the cells and sends them to
@@ -273,18 +259,6 @@ module board (
             (addr21 & (registers[15] | registers[14])) | 
             (addr22 & (registers[17] | registers[16]))) & do_write);
 
-    // only assign to a register if no errors and it is the addressed pair and it is
-    // the appropriate register for x or o
-    // assign regset[1:0] = (addr00 & ~input_error & ~write_error) ? xoro : registers[1:0];
-    // assign regset[3:2] = (addr01 & ~input_error & ~write_error) ? xoro : registers[3:2];
-    // assign regset[5:4] = (addr02 & ~input_error & ~write_error) ? xoro : registers[5:4];
-    // assign regset[7:6] = (addr10 & ~input_error & ~write_error) ? xoro : registers[7:6];
-    // assign regset[9:8] = (addr11 & ~input_error & ~write_error) ? xoro : registers[9:8];
-    // assign regset[11:10] = (addr12 & ~input_error & ~write_error) ? xoro : registers[11:10];
-    // assign regset[13:12] = (addr20 & ~input_error & ~write_error) ? xoro : registers[13:12];
-    // assign regset[15:14] = (addr21 & ~input_error & ~write_error) ? xoro : registers[15:14];
-    // assign regset[17:16] = (addr22 & ~input_error & ~write_error) ? xoro : registers[17:16];
-
     assign en00 = addr00 & ~input_error & ~write_error & do_write;
     assign en01 = addr01 & ~input_error & ~write_error & do_write;
     assign en02 = addr02 & ~input_error & ~write_error & do_write;
@@ -295,9 +269,6 @@ module board (
     assign en21 = addr21 & ~input_error & ~write_error & do_write;
     assign en22 = addr22 & ~input_error & ~write_error & do_write;
      
-    // synchronous reset of registers, or with regset signal for board control
-    // flopenr #18 boardmem(ph1, ph2, reset, 1'b1, regset, registers);
-
     // Registers only enabled when a write is valid, then they take on the xoro 
     // signal that is being written.
     flopenr #2 boardmem0 (ph1, ph2, reset, en00, xoro, registers[1:0]);
