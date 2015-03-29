@@ -303,16 +303,15 @@ module board (
 
     // Registers only enabled when a write is valid, then they take on the xoro 
     // signal that is being written.
-    flopenr #2 boardmem(ph1, ph2, reset, en00, xoro, registers[1:0]);
-    flopenr #2 boardmem(ph1, ph2, reset, en01, xoro, registers[3:2]);
-    flopenr #2 boardmem(ph1, ph2, reset, en01, xoro, registers[5:4]);
-    flopenr #2 boardmem(ph1, ph2, reset, en10, xoro, registers[7:6]);
-    flopenr #2 boardmem(ph1, ph2, reset, en11, xoro, registers[9:8]);
-    flopenr #2 boardmem(ph1, ph2, reset, en12, xoro, registers[11:10]);
-    flopenr #2 boardmem(ph1, ph2, reset, en20, xoro, registers[13:12]);
-    flopenr #2 boardmem(ph1, ph2, reset, en21, xoro, registers[15:14]);
-    flopenr #2 boardmem(ph1, ph2, reset, en22, xoro, registers[17:16]);
-
+    flopenr #2 boardmem0 (ph1, ph2, reset, en00, xoro, registers[1:0]);
+    flopenr #2 boardmem1 (ph1, ph2, reset, en01, xoro, registers[3:2]);
+    flopenr #2 boardmem2 (ph1, ph2, reset, en01, xoro, registers[5:4]);
+    flopenr #2 boardmem3 (ph1, ph2, reset, en10, xoro, registers[7:6]);
+    flopenr #2 boardmem4 (ph1, ph2, reset, en11, xoro, registers[9:8]);
+    flopenr #2 boardmem5 (ph1, ph2, reset, en12, xoro, registers[11:10]);
+    flopenr #2 boardmem6 (ph1, ph2, reset, en20, xoro, registers[13:12]);
+    flopenr #2 boardmem7 (ph1, ph2, reset, en21, xoro, registers[15:14]);
+    flopenr #2 boardmem8 (ph1, ph2, reset, en22, xoro, registers[17:16]);
 endmodule
 
 
