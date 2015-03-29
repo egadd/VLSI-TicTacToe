@@ -23,8 +23,8 @@ hs_err_pid*
 *.mti
 *.mpf
 *.wlf
-Verilog/work/*
+verilog/work/*
 
 # Cad tool outputs
 *.log*
-Verilog/INCA_libs/
+*/INCA_libs/

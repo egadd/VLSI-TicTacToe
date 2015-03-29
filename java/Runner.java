@@ -13,7 +13,7 @@ public class Runner {
             // Read from input
             // new BufferedReader(new InputStreamReader(System.in));
             // Read from inputVecs.txt
-            new BufferedReader(new FileReader("../Verilog/tictactoe.tv"));
+            new BufferedReader(new FileReader("../verilog/tictactoe.tv"));
         PrintWriter writer = new PrintWriter("javaOutputVecs.out", "UTF-8");
 
         String vector;
