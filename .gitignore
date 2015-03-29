@@ -1,6 +1,9 @@
 # Hidden files
 .*
 
+# Mac junk
+*~
+
 # Temporary out files
 *.out
 
@@ -32,3 +35,11 @@ verilog/*.key
 
 # ???
 */INCA_libs/
+
+# synth files
+synth/WORK/
+synth/alib-52/
+synth/change_names
+synth/default.svf
+synth/*.pow
+synth/*.rep
