@@ -70,34 +70,32 @@ module inputController(input logic ph1, ph2,        // two phase clock
                         input logic [1:0] row_ai, col_ai, 
                         output logic [1:0] xoro_write, row_write, col_write, 
                         output logic input_err, err);
-    // Define turn states
-    parameter TURN_X = 1'b0;
-    parameter TURN_O = 1'b1;
-
     // store the current turn, the next turn
-    logic state, nextstate;
+    // turn == 0 => X's turn
+    // turn == 1 => O's turn
+    logic turn;
 
     logic gameover_err;        // writing when the game is over
     logic parse_err;           // invalid xoro, row, col input (11)
     logic turn_err;            // move out of turn
     logic ai_err;              // ai move out of turn
     logic full_err;            // OR of all above errors + write_err (passed in)
-    logic write;               // high if attempting to make a manual move
+    logic write_att;           // high if attempting to make a manual move
     logic write_enable;
 
     // turn tracking FSM state register
-    flopenr #1 statereg(ph1, ph2, reset, write_enable, nextstate, state);
+    flopenr #1 statereg(ph1, ph2, reset, write_enable, ~turn, turn);
 
     // error checking logic
     // some errors only happen if we are trying to write
-    assign write = xoro_in[1] | xoro_in[0] | ai_en; 
+    assign write_att = xoro_in[1] | xoro_in[0];
 
     // Check inputs for validity, correct turn, and not a completed game
-    assign gameover_err = (win[1] | win[0]) & write;
+    assign gameover_err = (win[1] | win[0]) & (write_att | ai_en);
     assign parse_err = (row_in[1] & row_in[0]) | (col_in[1] & col_in[0]) | 
                         (xoro_in[1] & xoro_in[0]);
-    assign TURN_err = ((state == TURN_X) & xoro_in[0]) | ((state == TURN_O) & xoro_in[1]);
-    assign ai_err = (state == TURN_O) & ai_en;
+    assign turn_err = (~turn & xoro_in[0]) | (turn & xoro_in[1]);
+    assign ai_err = turn & ai_en;
     
     // input_error goes high when any of these errors are present
     assign input_err = gameover_err | parse_err | turn_err | ai_err;
@@ -106,20 +104,12 @@ module inputController(input logic ph1, ph2,        // two phase clock
     assign err = input_err | write_err;
 
     // only enable the register if no error & write to save power
-    assign write_enable = write & ~err;
-
-    // next state logic
-    always_comb
-        case (state)
-            TURN_X:     nextstate <= ((write | ai_en) & ~err) ? TURN_O : TURN_X;
-            TURN_O:     nextstate <= (write & ~err) ? TURN_X : TURN_O;
-            default:    nextstate <= TURN_X;
-        endcase
+    assign write_enable = (write_att | (ai_en & ~turn)) & ~err;
 
     // write source selection
-    assign xoro_write = (ai_en & (state == TURN_X)) ? xoro_ai : xoro_in;
-    assign row_write = (ai_en & (state == TURN_X)) ? row_ai : row_in;
-    assign col_write = (ai_en & (state == TURN_X)) ? col_ai : col_in;
+    assign xoro_write = ai_en ? xoro_ai : xoro_in;
+    assign row_write = ai_en ? row_ai : row_in;
+    assign col_write = ai_en ? col_ai : col_in;
 
 endmodule
 
