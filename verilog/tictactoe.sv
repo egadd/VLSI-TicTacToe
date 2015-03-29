@@ -317,7 +317,7 @@ module board (
     flopenr #2 boardmem6 (ph1, ph2, reset, en20, xoro, registers[13:12]);
     flopenr #2 boardmem7 (ph1, ph2, reset, en21, xoro, registers[15:14]);
     flopenr #2 boardmem8 (ph1, ph2, reset, en22, xoro, registers[17:16]);
-
+    
 endmodule
 
 

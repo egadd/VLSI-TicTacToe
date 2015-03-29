@@ -46,31 +46,31 @@ module tictactoetest();
   always @(negedge ph2)
     begin
       if (xoro_out !== xoroEx) begin // registers hold correct values
-        $display("Error: row = %h, col = %h, xoro = %h (expected %h)",
-	        row_out, col_out, xoro_out, xoroEx);
+        $display("Error (vector %3d): row = %h, col = %h, xoro = %h (expected %h)",
+	        vectornum, row_out, col_out, xoro_out, xoroEx);
 	errors = errors + 1;
       end
       
       if (win !== winEx) begin // win detection
-        $display("Error: win = %h (expected %h)", win, winEx);
+        $display("Error (vector %3d): win = %h (expected %h)", vectornum, win, winEx);
 	errors = errors + 1;
       end
       
       if (row_out !== rowEx) begin // output state machine 
-        $display("Error: row = %h (expected %h), col = %h", 
-            row_out, rowEx, col_out);
+        $display("Error (vector %3d): row = %h (expected %h), col = %h", 
+            vectornum, row_out, rowEx, col_out);
 	errors = errors + 1;
       end
 
       if (col_out !== colEx) begin // output state machine
-        $display("Error: row = %h, col = %h (expected %h)",
-            row_out, col_out, colEx);
+        $display("Error (vector %3d): row = %h, col = %h (expected %h)",
+            vectornum, row_out, col_out, colEx);
 	errors = errors + 1;
       end
 
       if (err !== errEx) begin // error detection - turn, ai, invalid input, invalid write
-        $display("Error: row = %h col = %h xoro = %h, err = %h (expected %h)", 
-            row_in, col_in, xoro_in, err, errEx);
+        $display("Error (vector %3d): row = %h col = %h xoro = %h, err = %h (expected %h)", 
+            vectornum, row_in, col_in, xoro_in, err, errEx);
   errors = errors + 1;
       end
 
