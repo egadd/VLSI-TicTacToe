@@ -57,7 +57,7 @@
     winChecker wc (reset, registers, win);
 
     // AI logic
-    ai genius (registers, xoro_ai, row_ai, col_ai);
+    ai genius (registers, row_ai, col_ai);
 
 
 endmodule
@@ -107,7 +107,7 @@ module inputController(input logic ph1, ph2,        // two phase clock
     assign write_enable = (write_att | (ai_en & ~turn)) & ~err;
 
     // write source selection
-    assign xoro_write = ai_en ? xoro_ai : xoro_in;
+    assign xoro_write = ai_en ? 2'b10: xoro_in;
     assign row_write = ai_en ? row_ai : row_in;
     assign col_write = ai_en ? col_ai : col_in;
 
