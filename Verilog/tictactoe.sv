@@ -89,7 +89,7 @@ module inputController(input logic ph1, ph2,        // two phase clock
 
     // error checking logic
     // some errors only happen if we are trying to write
-    assign write = xoro_in[1] | xoro_in[0]; 
+    assign write = xoro_in[1] | xoro_in[0] | ai_en; 
 
     // Check inputs for validity, correct turn, and not a completed game
     assign gameover_err = (win[1] | win[0]) & write;
