@@ -89,7 +89,7 @@ module inputController(input logic ph1, ph2,        // two phase clock
 
     // error checking logic
     // some errors only happen if we are trying to write
-    assign write = xoro_in[1] | xoro_in[0]; 
+    assign write = xoro_in[1] | xoro_in[0] | ai_en; 
 
     // Check inputs for validity, correct turn, and not a completed game
     assign gameover_err = (win[1] | win[0]) & write;
@@ -110,8 +110,8 @@ module inputController(input logic ph1, ph2,        // two phase clock
     // next state logic
     always_comb
         case (state)
-            TURN_X:          nextstate <= ((write | ai_en) & ~err) ? TURN_O : TURN_X;
-            TURN_O:          nextstate <= (write & ~err) ? TURN_X : TURN_O;
+            TURN_X:     nextstate <= ((write | ai_en) & ~err) ? TURN_O : TURN_X;
+            TURN_O:     nextstate <= (write & ~err) ? TURN_X : TURN_O;
             default:    nextstate <= TURN_X;
         endcase
 
@@ -252,6 +252,11 @@ module board (
     // logic [17:0] regset; 
     logic addr00, addr01, addr02, addr10, addr11, addr12, addr20, addr21, addr22;
     logic en00, en01, en02, en10, en11, en12, en20, en21, en22;
+    logic do_write;
+
+    // Only calculate many of the below signals if trying to make a turn
+    // (write to the board)
+    assign do_write = xoro[1] | xoro[0];
 
     // calculate address enable bits for each pair of registers
     assign addr00 = (row == 2'b00) & (col == 2'b00);
@@ -274,7 +279,7 @@ module board (
             (addr12 & (registers[11] | registers[10])) | 
             (addr20 & (registers[13] | registers[12])) | 
             (addr21 & (registers[15] | registers[14])) | 
-            (addr22 & (registers[17] | registers[16]))) & (xoro[1] | xoro[0]));
+            (addr22 & (registers[17] | registers[16]))) & do_write);
 
     // only assign to a register if no errors and it is the addressed pair and it is
     // the appropriate register for x or o
@@ -288,30 +293,30 @@ module board (
     // assign regset[15:14] = (addr21 & ~input_error & ~write_error) ? xoro : registers[15:14];
     // assign regset[17:16] = (addr22 & ~input_error & ~write_error) ? xoro : registers[17:16];
 
-    assign en00 = addr00 & ~input_error & ~write_error;
-    assign en01 = addr01 & ~input_error & ~write_error;
-    assign en02 = addr02 & ~input_error & ~write_error;
-    assign en10 = addr10 & ~input_error & ~write_error;
-    assign en11 = addr11 & ~input_error & ~write_error;
-    assign en12 = addr12 & ~input_error & ~write_error;
-    assign en20 = addr20 & ~input_error & ~write_error;
-    assign en21 = addr21 & ~input_error & ~write_error;
-    assign en22 = addr22 & ~input_error & ~write_error;
+    assign en00 = addr00 & ~input_error & ~write_error & do_write;
+    assign en01 = addr01 & ~input_error & ~write_error & do_write;
+    assign en02 = addr02 & ~input_error & ~write_error & do_write;
+    assign en10 = addr10 & ~input_error & ~write_error & do_write;
+    assign en11 = addr11 & ~input_error & ~write_error & do_write;
+    assign en12 = addr12 & ~input_error & ~write_error & do_write;
+    assign en20 = addr20 & ~input_error & ~write_error & do_write;
+    assign en21 = addr21 & ~input_error & ~write_error & do_write;
+    assign en22 = addr22 & ~input_error & ~write_error & do_write;
      
     // synchronous reset of registers, or with regset signal for board control
     // flopenr #18 boardmem(ph1, ph2, reset, 1'b1, regset, registers);
 
     // Registers only enabled when a write is valid, then they take on the xoro 
     // signal that is being written.
-    flopenr #2 boardmem(ph1, ph2, reset, en00, xoro, registers[1:0]);
-    flopenr #2 boardmem(ph1, ph2, reset, en01, xoro, registers[3:2]);
-    flopenr #2 boardmem(ph1, ph2, reset, en01, xoro, registers[5:4]);
-    flopenr #2 boardmem(ph1, ph2, reset, en10, xoro, registers[7:6]);
-    flopenr #2 boardmem(ph1, ph2, reset, en11, xoro, registers[9:8]);
-    flopenr #2 boardmem(ph1, ph2, reset, en12, xoro, registers[11:10]);
-    flopenr #2 boardmem(ph1, ph2, reset, en20, xoro, registers[13:12]);
-    flopenr #2 boardmem(ph1, ph2, reset, en21, xoro, registers[15:14]);
-    flopenr #2 boardmem(ph1, ph2, reset, en22, xoro, registers[17:16]);
+    flopenr #2 boardmem0 (ph1, ph2, reset, en00, xoro, registers[1:0]);
+    flopenr #2 boardmem1 (ph1, ph2, reset, en01, xoro, registers[3:2]);
+    flopenr #2 boardmem2 (ph1, ph2, reset, en02, xoro, registers[5:4]);
+    flopenr #2 boardmem3 (ph1, ph2, reset, en10, xoro, registers[7:6]);
+    flopenr #2 boardmem4 (ph1, ph2, reset, en11, xoro, registers[9:8]);
+    flopenr #2 boardmem5 (ph1, ph2, reset, en12, xoro, registers[11:10]);
+    flopenr #2 boardmem6 (ph1, ph2, reset, en20, xoro, registers[13:12]);
+    flopenr #2 boardmem7 (ph1, ph2, reset, en21, xoro, registers[15:14]);
+    flopenr #2 boardmem8 (ph1, ph2, reset, en22, xoro, registers[17:16]);
 
 endmodule
 
