@@ -83,6 +83,7 @@ module inputController(input logic ph1, ph2,        // two phase clock
     logic ai_err;              // ai move out of turn
     logic full_err;            // OR of all above errors + write_err (passed in)
     logic write;               // high if attempting to make a manual move
+    logic write_enable;
 
     // turn tracking FSM state register
     flopenr #1 statereg(ph1, ph2, reset, write_enable, nextstate, state);
@@ -99,7 +100,7 @@ module inputController(input logic ph1, ph2,        // two phase clock
     assign ai_err = (state == TURN_O) & ai_en;
     
     // input_error goes high when any of these errors are present
-    assign input_err = gameover_err | parse_err | TURN_err | ai_err;
+    assign input_err = gameover_err | parse_err | turn_err | ai_err;
     
     // if there are any errors including write, must block writes
     assign err = input_err | write_err;
@@ -179,65 +180,56 @@ module outputController (
     always_comb
         case (state)
             S0: begin // row 0 col 0
-                    assign row = 2'b00;
-                    assign col = 2'b00;
-                    assign xoro = registers[1:0];
+                    row = 2'b00;
+                    col = 2'b00;
+                    xoro = registers[1:0];
                 end
             S1: begin // r 0 c 1
-                    assign row = 2'b00;
-                    assign col = 2'b01;
-                    assign xoro = registers[3:2];
+                    row = 2'b00;
+                    col = 2'b01;
+                    xoro = registers[3:2];
                 end
             S2: begin // r 0 c 2
-                    assign row = 2'b00;
-                    assign col = 2'b10;
-                    assign xoro = registers[5:4];
+                    row = 2'b00;
+                    col = 2'b10;
+                    xoro = registers[5:4];
                 end
             S3: begin // r 1 c 0
-                    assign row = 2'b01;
-                    assign col = 2'b00;
-                    assign xoro = registers[7:6];
+                    row = 2'b01;
+                    col = 2'b00;
+                    xoro = registers[7:6];
                 end
             S4: begin // r 1 c 1
-                    assign row = 2'b01;
-                    assign col = 2'b01;
-                    assign xoro = registers[9:8];
+                    row = 2'b01;
+                    col = 2'b01;
+                    xoro = registers[9:8];
                 end
             S5: begin // r 1 c 2
-                    assign row = 2'b01;
-                    assign col = 2'b10;
-                    assign xoro = registers[11:10];
+                    row = 2'b01;
+                    col = 2'b10;
+                    xoro = registers[11:10];
                 end
             S6: begin // r 2 c 0
-                    assign row = 2'b10;
-                    assign col = 2'b00;
-                    assign xoro = registers[13:12];
+                    row = 2'b10;
+                    col = 2'b00;
+                    xoro = registers[13:12];
                 end
             S7: begin // r 2 c 1
-                    assign row = 2'b10;
-                    assign col = 2'b01;
-                    assign xoro = registers[15:14];
+                    row = 2'b10;
+                    col = 2'b01;
+                    xoro = registers[15:14];
                 end
             S8: begin // r 2 c 2
-                    assign row = 2'b10;
-                    assign col = 2'b10;
-                    assign xoro = registers[17:16];
+                    row = 2'b10;
+                    col = 2'b10;
+                    xoro = registers[17:16];
                 end
             default: begin
-                    assign row = 2'b00;
-                    assign col = 2'b00;
-                    assign xoro = registers[1:0];
+                    row = 2'b00;
+                    col = 2'b00;
+                    xoro = registers[1:0];
             end
         endcase
-
-    // Make sure every output signal goes low immediately upon reset.
-    // No waiting for board registers to update.
-    // assign xoro[1] = xo[1] & ~reset;
-    // assign xoro[0] = xo[0] & ~reset;
-    // assign row[1] = r[1] & ~reset;
-    // assign row[0] = r[0] & ~reset;
-    // assign col[1] = c[1] & ~reset;
-    // assign col[0] = c[0] & ~reset;
 endmodule
 
 // registers with set & error logic
@@ -317,7 +309,7 @@ module board (
     flopenr #2 boardmem6 (ph1, ph2, reset, en20, xoro, registers[13:12]);
     flopenr #2 boardmem7 (ph1, ph2, reset, en21, xoro, registers[15:14]);
     flopenr #2 boardmem8 (ph1, ph2, reset, en22, xoro, registers[17:16]);
-    
+
 endmodule
 
 
