@@ -46,3 +46,6 @@ synth/*.rep
 synth/*.mr
 synth/*.pvl
 synth/*.syn
+# ignore tictactoe design file because we need to copy it over from the
+# original every time we update it - and copying symlinks doesn't work. 
+synth/tictactoe.sv
