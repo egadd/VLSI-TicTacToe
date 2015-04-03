@@ -14,9 +14,6 @@
                   output logic err,
                   output logic [1:0] xoro_out, row_out, col_out, win);
 
-    // 2 registers per board space, one for X high, one for O high
-    logic [17:0] registers;
-
     // the AI's next move based on the current board state
     // calculate regardless of whether the AI is making a move or not
     logic [1:0] row_ai, col_ai;
@@ -45,6 +42,23 @@
                             xoro_write, row_write, col_write,
                             input_error, err);
 
+    synth_block sb (ph1, ph2, reset, row_write, col_write, xoro_write, 
+                    row_ai, col_ai, row_out, col_out, xoro_out, win, 
+                    write_error);
+
+endmodule
+
+// Container module for all synthesized logic.
+module synth_block (input logic ph1, ph2, reset, input_error,
+                    input logic [1:0] row_write, col_write, xoro_write, 
+                    output logic [1:0] row_ai, col_ai, 
+                    output logic [1:0] row_out, col_out, xoro_out, win, 
+                    output logic write_error);
+
+    // 2 registers per board space, one for X high, one for O high
+    logic [17:0] registers;
+
+
     // board state registers
     board b (ph1, ph2, reset, input_error,
               xoro_write, row_write, col_write,
@@ -59,8 +73,8 @@
     // AI logic
     ai genius (registers, row_ai, col_ai);
 
-
 endmodule
+
 
 // The input controller checks for input signal errors and tracks turns
 module inputController(input logic ph1, ph2,        // two phase clock
