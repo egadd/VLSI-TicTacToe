@@ -33,7 +33,7 @@
 # below are parameters that you will want to set for each design 
 ##################################################################
 set myFiles [list ../verilog/tictactoe.sv] ;# list of all HDL files in the design	
-set basename winChecker                 ;# Top-level module name
+set basename synth_block                ;# Top-level module name
 
 ##################################################################
 # You might want to change the following parameters, but they are fine for E158

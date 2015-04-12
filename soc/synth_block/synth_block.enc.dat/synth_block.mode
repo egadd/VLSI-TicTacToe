@@ -1,0 +1,10 @@
+setAnalysisMode -clkSrcPath true -clockPropagation sdcControl
+setTrialRouteMode -fixAirConnect true
+setExtractRCMode  -engine preRoute
+setDelayCalMode -engine default
+setCTSMode -moveGateLimit 25
+setNanoRouteMode -quiet -routeWithSiDriven false
+setNanoRouteMode -quiet -routeWithTimingDriven false
+
+setPlaceMode -congRepairForceTrialRoute false -fp false -ignoreScan true -relaxSoftBlockageMode 2 -timingDriven false
+setIlmMode -highFanoutPort true -loopBack false 
