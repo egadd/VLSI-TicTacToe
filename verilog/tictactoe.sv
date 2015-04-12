@@ -41,7 +41,8 @@
                             row_ai, col_ai,
                             xoro_write, row_write, col_write,
                             input_error, err);
-
+    
+    // Logic for synthesis
     synth_block sb (ph1, ph2, reset, input_error, row_write, col_write, 
                     xoro_write, row_ai, col_ai, row_out, col_out, xoro_out, 
                     win, write_error);
